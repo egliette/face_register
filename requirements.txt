@@ -1,0 +1,7 @@
+opencv-python
+onnx
+onnxruntime
+scikit-image
+minio
+python-dotenv
+pytest
