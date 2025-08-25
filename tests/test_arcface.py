@@ -38,7 +38,7 @@ def test_arcface_detect_returns_embedding():
         client.fget_object(bucket, object_name, str(local_model_path))
 
     # Import ArcFace and run detection on a dummy image with dummy landmarks
-    from app.core.arcface import ArcFace
+    from src.core.arcface import ArcFace
 
     img = np.zeros((480, 640, 3), dtype=np.uint8)
     h, w = img.shape[:2]

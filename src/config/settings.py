@@ -1,0 +1,34 @@
+from typing import List
+
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    DATABASE_URL: str = "postgresql://user:password@localhost:5432/face_register"
+
+    API_PREFIX: str = "/api"
+    PROJECT_NAME: str = "Face Register API"
+
+    FRONTEND_URL: str = "http://localhost:3000"
+    ADMIN_PANEL_URL: str = "http://localhost:8080"
+
+    MINIO_ENDPOINT: str = "localhost:9000"
+    MINIO_ACCESS_KEY: str = "minioadmin"
+    MINIO_SECRET_KEY: str = "minioadmin"
+    MINIO_SECURE: bool = False
+
+    SCRFD_BUCKET: str = "models"
+    SCRFD_MODEL_OBJECT: str = "scrfd/scrfd_640x640_kps.onnx"
+    ARCFACE_BUCKET: str = "models"
+    ARCFACE_MODEL_OBJECT: str = "arcface/arcface_r100_glint360k.onnx"
+
+    @property
+    def BACKEND_CORS_ORIGINS(self) -> List[str]:
+        """Build CORS origins list from individual URLs"""
+        return [self.FRONTEND_URL, self.ADMIN_PANEL_URL]
+
+    class Config:
+        env_file = ".env"
+
+
+settings = Settings()

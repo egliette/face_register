@@ -38,7 +38,7 @@ def test_scrfd_detect_returns_faces():
         client.fget_object(bucket, object_name, str(local_model_path))
 
     # Import SCRFD and run detection on a blank image
-    from app.core.scrfd import SCRFD, Face
+    from src.core.scrfd import SCRFD, Face
 
     img = np.zeros((480, 640, 3), dtype=np.uint8)
     scrfd = SCRFD(model_file=str(local_model_path))

@@ -5,7 +5,7 @@ import numpy as np
 import onnx
 import onnxruntime
 
-from app.utils.face_utils import norm_crop
+from src.utils.face_utils import norm_crop
 
 
 class ArcFace:
