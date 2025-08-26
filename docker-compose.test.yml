@@ -1,35 +1,26 @@
 services:
   postgres:
     image: postgres:15
-    container_name: face_register_postgres_dev
+    container_name: face_register_postgres_test
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}_dev
+      POSTGRES_DB: ${POSTGRES_DB}_test
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-    volumes:
-      - postgres_dev_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - person_detection
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}_dev"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}_test"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   minio:
     image: minio/minio:latest
-    container_name: face_register_minio_dev
+    container_name: face_register_minio_test
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
-    command: server /data --console-address ":9001"
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_dev_data:/data
+    command: server /data
     networks:
       - person_detection
     healthcheck:
@@ -38,14 +29,14 @@ services:
       timeout: 20s
       retries: 3
 
-  app:
-    image: face-register:dev
+  app_test:
+    image: face-register:test
     build:
       dockerfile: Dockerfile
-      target: development
-    container_name: face_register_app_dev
+      target: test
+    container_name: face_register_app_test
     environment:
-      DATABASE_URL: ${DATABASE_URL}_dev
+      DATABASE_URL: ${DATABASE_URL}_test
       MINIO_ENDPOINT: ${MINIO_ENDPOINT}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
@@ -58,10 +49,7 @@ services:
       PROJECT_NAME: ${PROJECT_NAME}
       FRONTEND_URL: ${FRONTEND_URL}
       ADMIN_PANEL_URL: ${ADMIN_PANEL_URL}
-    ports:
-      - "8000:8000"
     volumes:
-      - ./src:/app/src
       - ./assets:/app/assets
     depends_on:
       postgres:
@@ -70,12 +58,7 @@ services:
         condition: service_healthy
     networks:
       - person_detection
-    restart: unless-stopped
-    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-
-volumes:
-  postgres_dev_data:
-  minio_dev_data:
+    command: ["pytest", "-v"]
 
 networks:
   person_detection:
