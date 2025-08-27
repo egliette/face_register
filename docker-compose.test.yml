@@ -58,7 +58,6 @@ services:
         condition: service_healthy
     networks:
       - person_detection
-    command: ["pytest", "-v"]
 
 networks:
   person_detection:

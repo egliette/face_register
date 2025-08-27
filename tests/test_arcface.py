@@ -2,10 +2,12 @@ import os
 from pathlib import Path
 
 import numpy as np
+import pytest
 from dotenv import load_dotenv
 from minio import Minio
 
 
+@pytest.mark.model_dependent
 def test_arcface_detect_returns_embedding():
     # Load environment from repo root .env (parent of tests folder)
     repo_root = Path(__file__).resolve().parents[1]

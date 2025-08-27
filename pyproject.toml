@@ -35,3 +35,8 @@ test = [
     "pytest-asyncio>=0.21.0",
     "httpx>=0.24.0",
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "model_dependent: marks tests as requiring external models (deselect with '-m \"not model_dependent\"')",
+]

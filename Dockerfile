@@ -47,7 +47,7 @@ RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
 USER app
 
-CMD ["pytest", "-v"]
+CMD ["pytest", "-v", "-m", "not model_dependent"]
 
 
 FROM base as development

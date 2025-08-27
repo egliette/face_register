@@ -27,8 +27,7 @@ class Settings(BaseSettings):
         """Build CORS origins list from individual URLs"""
         return [self.FRONTEND_URL, self.ADMIN_PANEL_URL]
 
-    class Config:
-        env_file = ".env"
+    model_config = {"env_file": ".env"}
 
 
 settings = Settings()
