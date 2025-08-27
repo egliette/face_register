@@ -23,7 +23,7 @@ env:
   POSTGRES_DB: face_register
   POSTGRES_USER: user
   POSTGRES_PASSWORD: password
-  DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  DATABASE_URL: postgresql://user:password@postgres:5432/face_register
   # API
   API_PREFIX: /api
   PROJECT_NAME: "Face Register API"
