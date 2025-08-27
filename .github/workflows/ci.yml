@@ -67,7 +67,7 @@ jobs:
 
     - name: Build test image
       run: |
-        docker build -t face-register:test --target test .
+        docker compose -f docker-compose.test.yml build app_test
 
     - name: Create network
       run: |
@@ -75,7 +75,7 @@ jobs:
 
     - name: Start test services
       run: |
-        docker-compose -f docker-compose.test.yml up -d postgres minio
+        docker compose -f docker-compose.test.yml up -d postgres minio
 
     - name: Wait for services to be ready
       run: |
@@ -83,10 +83,10 @@ jobs:
 
     - name: Run tests
       run: |
-        docker-compose -f docker-compose.test.yml run --rm app_test pytest -v -m "not model_dependent"
+        docker compose -f docker-compose.test.yml up --exit-code-from app_test --abort-on-container-exit app_test
 
     - name: Cleanup
       if: always()
       run: |
-        docker-compose -f docker-compose.test.yml down -v
+        docker compose -f docker-compose.test.yml down -v
         docker network rm person_detection || true
