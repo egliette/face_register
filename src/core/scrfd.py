@@ -342,6 +342,9 @@ class SCRFD:
         )
         offset_dist_squared = np.sum(np.power(offsets, 2.0), 0)
 
+        # Choose the sorting metric for picking top faces:
+        # - metric == "max": use pure bbox area (prefers larger faces)
+        # - otherwise: area - distance_penalty (prefers centered, larger faces)
         if metric == "max":
             values = area
         else:
