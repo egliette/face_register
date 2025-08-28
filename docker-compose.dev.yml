@@ -61,7 +61,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./src:/app/src
+      - ./app:/app/app
       - ./assets:/app/assets
     depends_on:
       postgres:
@@ -71,7 +71,7 @@ services:
     networks:
       - person_detection
     restart: unless-stopped
-    command: ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 volumes:
   postgres_dev_data:

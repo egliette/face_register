@@ -23,7 +23,7 @@ COPY pyproject.toml .
 FROM base as production
 RUN pip install --no-cache-dir .
 
-COPY src/ ./src/
+COPY app/ ./app/
 
 RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
@@ -34,13 +34,13 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 
 FROM base as test
 RUN pip install --no-cache-dir ".[test]"
 
-COPY src/ ./src/
+COPY app/ ./app/
 COPY tests/ ./tests/
 
 RUN useradd --create-home --shell /bin/bash app \
@@ -57,4 +57,4 @@ RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
 USER app
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

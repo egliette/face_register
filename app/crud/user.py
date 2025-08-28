@@ -2,8 +2,8 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from src.models.user import User
-from src.schemas.user import UserCreate, UserUpdate
+from app.models.user import User
+from app.schemas.user import UserCreate, UserUpdate
 
 
 def get_user(db: Session, user_id: int) -> Optional[User]:

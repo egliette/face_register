@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 import onnxruntime
 
-from src.utils.face_utils import distance2bbox, distance2kps, nms, softmax
+from app.utils.face_utils import distance2bbox, distance2kps, nms, softmax
 
 
 @dataclass
