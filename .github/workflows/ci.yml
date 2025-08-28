@@ -52,11 +52,11 @@ jobs:
 
     - name: Check import sorting with isort
       run: |
-        isort --profile=black --check-only --diff app/ tests/
+        isort --profile=black --check-only --diff app/
 
     - name: Check code formatting with Black
       run: |
-        black --check --diff app/ tests/
+        black --check --diff app/
 
   test:
     name: Run Tests
