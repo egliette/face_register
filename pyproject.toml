@@ -27,6 +27,7 @@ dependencies = [
     "onnx>=1.13.0",
     "onnxruntime>=1.17.0",
     "scikit-image>=0.21.0",
+    "alembic>=1.13.0",
 ]
 
 [project.optional-dependencies]
@@ -40,3 +41,10 @@ test = [
 markers = [
     "model_dependent: marks tests as requiring external models (deselect with '-m \"not model_dependent\"')",
 ]
+
+[tool.setuptools]
+# Ensure only the Python package under `app/` is included; exclude non-Python assets
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["assets*"]
