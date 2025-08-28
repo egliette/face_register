@@ -41,13 +41,12 @@ FROM base as test
 RUN pip install --no-cache-dir ".[test]"
 
 COPY app/ ./app/
-COPY tests/ ./tests/
 
 RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
 USER app
 
-CMD ["pytest", "-v", "-m", "not model_dependent"]
+CMD ["pytest", "-v", "-m", "not model_dependent", "app/tests"]
 
 
 FROM base as development
