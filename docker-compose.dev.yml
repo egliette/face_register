@@ -38,6 +38,25 @@ services:
       timeout: 20s
       retries: 3
 
+  db_migrate:
+    image: face-register:dev
+    build:
+      dockerfile: Dockerfile
+      target: development
+    container_name: face_register_db_migrate_dev
+    environment:
+      DATABASE_URL: ${DATABASE_URL}_dev
+    volumes:
+      - ./app:/app/app
+      - ./assets:/app/assets
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - person_detection
+    restart: "no"
+    command: ["alembic", "-c", "app/alembic.ini", "upgrade", "head"]
+
   app:
     image: face-register:dev
     build:

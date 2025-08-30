@@ -18,6 +18,8 @@ def test_list_users(client):
     assert resp.status_code == status.HTTP_200_OK
     users: List[Dict] = resp.json()
     assert isinstance(users, list)
+    # This assertion will always fail to demonstrate exit code propagation
+    assert False, "This test is intentionally failing to show exit code behavior"
 
 
 def test_get_user_found(client):

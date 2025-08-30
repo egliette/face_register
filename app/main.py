@@ -3,10 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.endpoints import router
 from app.config.settings import settings
-from app.database.connection import engine
-from app.models.user import Base
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME, openapi_url=f"{settings.API_PREFIX}/openapi.json"

@@ -9,11 +9,13 @@ COMPOSE_FILE="${REPO_ROOT}/docker-compose.test.yml"
 NETWORK_NAME="person_detection"
 
 REBUILD=false
+KEEP_RUNNING=false
 
 usage() {
-  echo "Usage: $(basename "$0") [--rebuild|-r] [--detach|-d]" >&2
-  echo "  --rebuild, -r  Rebuild app_test image before starting" >&2
-  echo "  --detach,  -d  Run docker-compose detached (-d)" >&2
+  echo "Usage: $(basename "$0") [--rebuild|-r] [--detach|-d] [--keep-running|-k]" >&2
+  echo "  --rebuild, -r      Rebuild app_test image before starting" >&2
+  echo "  --detach, -d       Run docker-compose detached (-d)" >&2
+  echo "  --keep-running, -k Keep test stack running after tests complete" >&2
 }
 
 DETACH_FLAG=""
@@ -26,6 +28,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --detach|-d)
       DETACH_FLAG="-d"
+      shift
+      ;;
+    --keep-running|-k)
+      KEEP_RUNNING=true
       shift
       ;;
     --help|-h)
@@ -56,7 +62,20 @@ if [[ "$REBUILD" == "true" ]]; then
   docker-compose -f "$COMPOSE_FILE" build app_test
 fi
 
-echo "Starting test stack..."
-docker-compose -f "$COMPOSE_FILE" up $DETACH_FLAG --exit-code-from app_test --abort-on-container-exit app_test
+echo "Starting dependencies (postgres, minio)..."
+docker-compose -f "$COMPOSE_FILE" up -d postgres minio
+
+echo "Running database migrations..."
+docker-compose -f "$COMPOSE_FILE" run --rm db_migrate
+
+echo "Running tests..."
+docker-compose -f "$COMPOSE_FILE" up --exit-code-from app_test app_test
+
+if [[ "$KEEP_RUNNING" == "true" ]]; then
+  echo "Keeping test stack running. Use 'docker-compose -f $COMPOSE_FILE down -v' to clean up manually."
+else
+  echo "Cleaning up test stack..."
+  docker-compose -f "$COMPOSE_FILE" down -v
+fi
 
 echo "Done."

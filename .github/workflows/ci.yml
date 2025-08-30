@@ -78,17 +78,17 @@ jobs:
       run: |
         docker network create person_detection || true
 
-    - name: Start test services
+    - name: Start dependencies
       run: |
         docker compose -f docker-compose.test.yml up -d postgres minio
 
-    - name: Wait for services to be ready
+    - name: Run database migrations
       run: |
-        timeout 60 bash -c 'until docker exec face_register_postgres_test pg_isready -U postgres -d face_register_test; do sleep 2; done'
+        docker compose -f docker-compose.test.yml run --rm db_migrate
 
     - name: Run tests
       run: |
-        docker compose -f docker-compose.test.yml up --exit-code-from app_test --abort-on-container-exit app_test
+        docker compose -f docker-compose.test.yml up --exit-code-from app_test app_test
 
     - name: Cleanup
       if: always()
