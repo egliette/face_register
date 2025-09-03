@@ -62,8 +62,8 @@ if [[ "$REBUILD" == "true" ]]; then
   docker-compose -f "$COMPOSE_FILE" build app_test
 fi
 
-echo "Starting dependencies (postgres, minio)..."
-docker-compose -f "$COMPOSE_FILE" up -d postgres minio
+echo "Starting dependencies (postgres, minio, qdrant)..."
+docker-compose -f "$COMPOSE_FILE" up -d postgres minio qdrant
 
 echo "Running database migrations..."
 docker-compose -f "$COMPOSE_FILE" run --rm db_migrate

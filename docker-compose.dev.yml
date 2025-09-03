@@ -38,6 +38,23 @@ services:
       timeout: 20s
       retries: 3
 
+  qdrant:
+    image: qdrant/qdrant:v1.13.2
+    container_name: face_register_qdrant_dev
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_dev_data:/qdrant/storage
+    networks:
+      - person_detection
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
   db_migrate:
     image: face-register:dev
     build:
@@ -77,6 +94,10 @@ services:
       PROJECT_NAME: ${PROJECT_NAME}
       FRONTEND_URL: ${FRONTEND_URL}
       ADMIN_PANEL_URL: ${ADMIN_PANEL_URL}
+      QDRANT_URL: ${QDRANT_URL}
+      QDRANT_API_KEY: ${QDRANT_API_KEY}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION}
+      QDRANT_VECTOR_SIZE: ${QDRANT_VECTOR_SIZE}
     ports:
       - "8000:8000"
     volumes:
@@ -87,6 +108,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      qdrant:
+        condition: service_healthy
     networks:
       - person_detection
     restart: unless-stopped
@@ -95,6 +118,7 @@ services:
 volumes:
   postgres_dev_data:
   minio_dev_data:
+  qdrant_dev_data:
 
 networks:
   person_detection:

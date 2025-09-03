@@ -47,6 +47,17 @@ services:
     restart: "no"
     command: ["alembic", "-c", "app/alembic.ini", "upgrade", "head"]
 
+  qdrant:
+    image: qdrant/qdrant:v1.13.2
+    container_name: face_register_qdrant_test
+    networks:
+      - person_detection
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   app_test:
     image: face-register:test
     build:
@@ -67,12 +78,18 @@ services:
       PROJECT_NAME: ${PROJECT_NAME}
       FRONTEND_URL: ${FRONTEND_URL}
       ADMIN_PANEL_URL: ${ADMIN_PANEL_URL}
+      QDRANT_URL: ${QDRANT_URL}
+      QDRANT_API_KEY: ${QDRANT_API_KEY}
+      QDRANT_COLLECTION: ${QDRANT_COLLECTION}
+      QDRANT_VECTOR_SIZE: ${QDRANT_VECTOR_SIZE}
     volumes:
       - ./assets:/app/assets
     depends_on:
       postgres:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      qdrant:
         condition: service_healthy
     networks:
       - person_detection

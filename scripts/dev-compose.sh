@@ -68,21 +68,17 @@ if [[ "$REBUILD" == "true" ]]; then
   docker-compose -f "$COMPOSE_FILE" build app
 fi
 
-echo "Starting dependencies (postgres, minio)..."
-docker-compose -f "$COMPOSE_FILE" up -d postgres minio
+echo "Starting dependencies (postgres, minio, qdrant)..."
+docker-compose -f "$COMPOSE_FILE" up -d postgres minio qdrant
 
 echo "Running database migrations..."
 docker-compose -f "$COMPOSE_FILE" run --rm db_migrate
 
 if [[ "$ATTACH_SHELL" == "true" ]]; then
   echo "Starting app container and attaching to shell..."
-  if [[ "$NO_COMMAND" == "true" ]]; then
-    # Start app without command and attach to shell
-    docker-compose -f "$COMPOSE_FILE" run --rm --service-ports app /bin/bash
-  else
-    # Start app with default command but override to shell
-    docker-compose -f "$COMPOSE_FILE" run --rm --service-ports app /bin/bash
-  fi
+  # Ensure app is running and stays alive, then attach a shell
+  docker-compose -f "$COMPOSE_FILE" up -d app
+  docker exec -it face_register_app_dev /bin/bash
 else
   if [[ "$NO_COMMAND" == "true" ]]; then
     echo "Starting app container without command..."
