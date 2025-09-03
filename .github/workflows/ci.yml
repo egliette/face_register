@@ -29,6 +29,10 @@ env:
   PROJECT_NAME: "Face Register API"
   FRONTEND_URL: http://localhost:3000
   ADMIN_PANEL_URL: http://localhost:8080
+  # Qdrant
+  QDRANT_URL: http://qdrant:6333
+  QDRANT_COLLECTION: face_embeddings
+  QDRANT_VECTOR_SIZE: "512"
 
 jobs:
   lint:
