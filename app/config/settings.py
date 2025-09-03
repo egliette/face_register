@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     ARCFACE_BUCKET: str = "models"
     ARCFACE_MODEL_OBJECT: str = "arcface/arcface_r100_glint360k.onnx"
 
+    # Qdrant vector DB
+    QDRANT_URL: str = "http://localhost:6333"
+    QDRANT_API_KEY: str | None = None
+    QDRANT_COLLECTION: str = "face_embeddings"
+    QDRANT_VECTOR_SIZE: int = 512
+
     @property
     def BACKEND_CORS_ORIGINS(self) -> List[str]:
         """Build CORS origins list from individual URLs"""

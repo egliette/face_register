@@ -2,8 +2,10 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
+from app.crud.face_embedding import delete_face_embeddings_by_user
 from app.models.user import User
 from app.schema.user import UserCreate, UserUpdate
+from app.services.qdrant import delete_embeddings_by_user
 
 
 def get_user(db: Session, user_id: int) -> Optional[User]:
@@ -41,6 +43,13 @@ def delete_user(db: Session, user_id: int) -> bool:
     if not db_user:
         return False
 
+    # Delete all face embeddings for this user from database
+    delete_face_embeddings_by_user(db, user_id)
+
+    # Delete all face embeddings for this user from Qdrant
+    delete_embeddings_by_user(user_id)
+
+    # Delete the user
     db.delete(db_user)
     db.commit()
     return True

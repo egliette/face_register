@@ -33,14 +33,14 @@ def test_arcface_detect_returns_embedding():
     )
 
     # Download model to assets/models/arcface
-    models_dir = repo_root / "assets" / "models" / "arcface"
+    models_dir = Path("assets/models/arcface")
     models_dir.mkdir(parents=True, exist_ok=True)
     local_model_path = models_dir / Path(object_name).name
     if not local_model_path.exists():
         client.fget_object(bucket, object_name, str(local_model_path))
 
     # Import ArcFace and run detection on a dummy image with dummy landmarks
-    from src.core.arcface import ArcFace
+    from app.core.arcface import ArcFace
 
     img = np.zeros((480, 640, 3), dtype=np.uint8)
     h, w = img.shape[:2]

@@ -28,7 +28,7 @@ class SCRFD:
         self,
         model_file: str,
         nms_thresh: float = 0.4,
-        det_thresh: float = 0.5,
+        det_thresh: float = 0.2,
         input_size: Tuple[int, int] = (640, 640),
     ) -> None:
         self.model_file = model_file
@@ -419,7 +419,6 @@ class SCRFD:
         boxes, scores, keypoints = self.postprocess(
             model_input, model_output, scale_ratio, max_num, metric
         )
-
         faces: List[Face] = []
         num_detections = boxes.shape[0]
         for i in range(num_detections):

@@ -33,14 +33,14 @@ def test_scrfd_detect_returns_faces():
     )
 
     # Download model to assets/models/scrfd
-    models_dir = repo_root / "assets" / "models" / "scrfd"
+    models_dir = Path("assets/models/scrfd")
     models_dir.mkdir(parents=True, exist_ok=True)
     local_model_path = models_dir / Path(object_name).name
     if not local_model_path.exists():
         client.fget_object(bucket, object_name, str(local_model_path))
 
     # Import SCRFD and run detection on a blank image
-    from src.core.scrfd import SCRFD, Face
+    from app.core.scrfd import SCRFD, Face
 
     img = np.zeros((480, 640, 3), dtype=np.uint8)
     scrfd = SCRFD(model_file=str(local_model_path))

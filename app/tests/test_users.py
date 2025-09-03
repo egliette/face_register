@@ -53,3 +53,42 @@ def test_delete_user(client):
     # ensure now 404
     resp2 = client.get(f"/api/users/{user_id}")
     assert resp2.status_code == status.HTTP_404_NOT_FOUND
+
+
+def test_delete_user_removes_embeddings(client, clean_db):
+    """Test that deleting a user also removes their face embeddings."""
+
+    create = client.post("/api/users/", json={"name": "Eve", "phone": "666"})
+    user_id = create.json()["id"]
+
+    # Create real embeddings and upsert to Qdrant
+    import numpy as np
+
+    from app.config.settings import settings
+    from app.crud.face_embedding import (
+        create_face_embedding,
+        get_face_embeddings_by_user,
+    )
+    from app.schema.face_embedding import FaceEmbeddingCreate
+    from app.services.qdrant import upsert_embedding
+
+    vector_size = settings.QDRANT_VECTOR_SIZE
+    for _ in range(2):
+        vec = np.random.rand(vector_size).astype(np.float32)
+        rec = create_face_embedding(
+            clean_db,
+            FaceEmbeddingCreate(user_id=user_id, embedding=vec.tolist()),
+        )
+        upsert_embedding(point_id=rec.id, embedding=vec.tolist(), user_id=user_id)
+
+    # Delete the user and assert success
+    resp = client.delete(f"/api/users/{user_id}")
+    assert resp.status_code == status.HTTP_204_NO_CONTENT
+
+    # Verify user is gone
+    resp2 = client.get(f"/api/users/{user_id}")
+    assert resp2.status_code == status.HTTP_404_NOT_FOUND
+
+    # Verify DB embeddings are removed
+    remaining = get_face_embeddings_by_user(clean_db, user_id)
+    assert remaining == []

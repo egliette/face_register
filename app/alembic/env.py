@@ -12,6 +12,7 @@ from app.config.settings import settings
 
 # Import your models and settings
 from app.database.connection import Base
+from app.models.face_embedding import FaceEmbedding
 from app.models.user import User
 
 # this is the Alembic Config object, which provides
