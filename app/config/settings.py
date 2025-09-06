@@ -28,6 +28,13 @@ class Settings(BaseSettings):
     QDRANT_COLLECTION: str = "face_embeddings"
     QDRANT_VECTOR_SIZE: int = 512
 
+    # Logging settings
+    LOG_DIR: str = "logs"
+    LOG_TO_STDOUT: bool = True
+    LOG_LEVEL: str = "INFO"
+    LOG_MAX_DAYS: int = 30
+    SERVICE_NAME: str = "face_register"
+
     @property
     def BACKEND_CORS_ORIGINS(self) -> List[str]:
         """Build CORS origins list from individual URLs"""

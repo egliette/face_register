@@ -33,6 +33,15 @@ env:
   QDRANT_URL: http://qdrant:6333
   QDRANT_COLLECTION: face_embeddings
   QDRANT_VECTOR_SIZE: "512"
+  # Logging
+  SERVICE_NAME: face_register
+  LOG_DIR: logs
+  LOG_TO_STDOUT: "true"
+  LOG_LEVEL: INFO
+  LOG_MAX_DAYS: "33"
+  # Container user mapping
+  APP_UID: "1000"
+  APP_GID: "1000"
 
 jobs:
   lint:

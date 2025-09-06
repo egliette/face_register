@@ -60,9 +60,18 @@ services:
     build:
       dockerfile: Dockerfile
       target: development
+      args:
+        APP_UID: ${APP_UID}
+        APP_GID: ${APP_GID}
+        LOG_DIR: ${LOG_DIR}
     container_name: face_register_db_migrate_dev
     environment:
       DATABASE_URL: ${DATABASE_URL}_dev
+      SERVICE_NAME: ${SERVICE_NAME}
+      LOG_DIR: ${LOG_DIR}
+      LOG_TO_STDOUT: ${LOG_TO_STDOUT}
+      LOG_LEVEL: ${LOG_LEVEL}
+      LOG_MAX_DAYS: ${LOG_MAX_DAYS}
     volumes:
       - ./app:/app/app
       - ./assets:/app/assets
@@ -79,6 +88,10 @@ services:
     build:
       dockerfile: Dockerfile
       target: development
+      args:
+        APP_UID: ${APP_UID}
+        APP_GID: ${APP_GID}
+        LOG_DIR: ${LOG_DIR}
     container_name: face_register_app_dev
     environment:
       DATABASE_URL: ${DATABASE_URL}_dev
@@ -98,11 +111,17 @@ services:
       QDRANT_API_KEY: ${QDRANT_API_KEY}
       QDRANT_COLLECTION: ${QDRANT_COLLECTION}
       QDRANT_VECTOR_SIZE: ${QDRANT_VECTOR_SIZE}
+      SERVICE_NAME: ${SERVICE_NAME}
+      LOG_DIR: ${LOG_DIR}
+      LOG_TO_STDOUT: ${LOG_TO_STDOUT}
+      LOG_LEVEL: ${LOG_LEVEL}
+      LOG_MAX_DAYS: ${LOG_MAX_DAYS}
     ports:
       - "8000:8000"
     volumes:
       - ./app:/app/app
       - ./assets:/app/assets
+      - ./logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,3 +1,4 @@
+import time
 from typing import List
 
 import cv2
@@ -17,13 +18,20 @@ from app.database.connection import get_db
 from app.schema.face_embedding import FaceEmbedding, FaceEmbeddingCreate
 from app.schema.user import User, UserCreate, UserUpdate
 from app.services.qdrant import delete_embedding, upsert_embedding
+from app.utils.logger import log
 
 router = APIRouter()
 
 
 @router.post("/users/", response_model=User, status_code=status.HTTP_201_CREATED)
 def create_new_user(user: UserCreate, db: Session = Depends(get_db)):
-    return create_user(db=db, user=user)
+    try:
+        result = create_user(db=db, user=user)
+        log.info(f"Successfully created user {user.name} with ID: {result.id}")
+        return result
+    except Exception as e:
+        log.exception(e, f"creating user {user.name}")
+        raise
 
 
 @router.get("/users/", response_model=List[User])
@@ -36,6 +44,7 @@ def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 def read_user(user_id: int, db: Session = Depends(get_db)):
     db_user = get_user(db, user_id=user_id)
     if db_user is None:
+        log.warn(f"User not found: {user_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
@@ -78,44 +87,87 @@ def enroll_face(
     image: UploadFile = File(..., media_type="image/*"),
     db: Session = Depends(get_db),
 ):
+    start_time = time.time()
+    log.info(f"Starting face enrollment for user {user_id}, file: {image.filename}")
+
     allowed_content_types = {"image/jpeg", "image/png", "image/webp"}
     if image.content_type not in allowed_content_types:
+        log.warn(f"Unsupported file type for user {user_id}: {image.content_type}")
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="Unsupported file type. Allowed: image/jpeg, image/png, image/webp",
         )
 
-    data = image.file.read()
-    if not data:
-        raise HTTPException(status_code=400, detail="Empty image upload")
+    try:
+        data = image.file.read()
+        if not data:
+            log.warn(f"Empty image upload for user {user_id}")
+            raise HTTPException(status_code=400, detail="Empty image upload")
 
-    nparr = np.frombuffer(data, np.uint8)
-    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    if img is None:
-        raise HTTPException(status_code=400, detail="Invalid image data")
+        nparr = np.frombuffer(data, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if img is None:
+            log.warn(f"Invalid image data for user {user_id}")
+            raise HTTPException(status_code=400, detail="Invalid image data")
 
-    scrfd = get_scrfd()
-    faces = scrfd.detect(img, max_num=1)
-    if len(faces) == 0:
-        raise HTTPException(status_code=422, detail="No face detected")
-    if len(faces) > 1:
-        raise HTTPException(status_code=422, detail="Multiple faces detected")
+        log.bug(f"Image loaded successfully for user {user_id}, size: {img.shape}")
+    except Exception as e:
+        log.exception(e, f"processing image for user {user_id}")
+        raise
 
-    face = faces[0]
-    if getattr(face, "keypoint", None) is None:
-        raise HTTPException(
-            status_code=422, detail="No landmarks available for alignment"
+    try:
+        scrfd = get_scrfd()
+        faces = scrfd.detect(img, max_num=1)
+        log.bug(
+            f"Face detection completed for user {user_id}, found {len(faces)} faces"
         )
 
-    arc = get_arcface()
-    embedding = arc.detect(img, landmarks=face.keypoint)
+        if len(faces) == 0:
+            log.warn(f"No face detected in image for user {user_id}")
+            raise HTTPException(status_code=422, detail="No face detected")
+        if len(faces) > 1:
+            log.warn(f"Multiple faces detected in image for user {user_id}")
+            raise HTTPException(status_code=422, detail="Multiple faces detected")
 
-    record = create_face_embedding(
-        db, FaceEmbeddingCreate(user_id=user_id, embedding=embedding.tolist())
-    )
+        face = faces[0]
+        if getattr(face, "keypoint", None) is None:
+            log.warn(f"No landmarks available for user {user_id}")
+            raise HTTPException(
+                status_code=422, detail="No landmarks available for alignment"
+            )
 
-    upsert_embedding(point_id=record.id, embedding=embedding.tolist(), user_id=user_id)
-    return record
+        log.bug(f"Face detection successful for user {user_id}, score: {face.score}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception(e, f"face detection for user {user_id}")
+        raise
+
+    try:
+        arc = get_arcface()
+        embedding = arc.detect(img, landmarks=face.keypoint)
+        log.bug(
+            f"Face embedding extracted for user {user_id}, dimension: {len(embedding)}"
+        )
+    except Exception as e:
+        log.exception(e, f"face embedding extraction for user {user_id}")
+        raise
+
+    try:
+        record = create_face_embedding(
+            db, FaceEmbeddingCreate(user_id=user_id, embedding=embedding.tolist())
+        )
+
+        upsert_embedding(
+            point_id=record.id, embedding=embedding.tolist(), user_id=user_id
+        )
+        duration = time.time() - start_time
+        log.perf("face_enrollment", duration, user_id=user_id, file_size=len(data))
+
+        return record
+    except Exception as e:
+        log.exception(e, f"saving face embedding for user {user_id}")
+        raise
 
 
 @router.get(

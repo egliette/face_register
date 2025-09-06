@@ -5,10 +5,12 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models as qm
 
 from app.config.settings import settings
+from app.utils.logger import log
 
 
 @lru_cache(maxsize=1)
 def get_qdrant() -> QdrantClient:
+    log.bug(f"{settings.QDRANT_URL = }")
     return QdrantClient(
         url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY, timeout=10.0
     )
@@ -19,29 +21,43 @@ def ensure_collection(vector_size: Optional[int] = None) -> None:
     size = vector_size or settings.QDRANT_VECTOR_SIZE
     try:
         exists = client.collection_exists(settings.QDRANT_COLLECTION)
-    except Exception:
+    except Exception as e:
+        log.exception(
+            e, f"checking collection existence for {settings.QDRANT_COLLECTION}"
+        )
         exists = False
     if not exists:
-        client.create_collection(
-            collection_name=settings.QDRANT_COLLECTION,
-            vectors_config=qm.VectorParams(size=size, distance=qm.Distance.COSINE),
-        )
+        try:
+            client.create_collection(
+                collection_name=settings.QDRANT_COLLECTION,
+                vectors_config=qm.VectorParams(size=size, distance=qm.Distance.COSINE),
+            )
+            log.info(
+                f"Created Qdrant collection {settings.QDRANT_COLLECTION} with vector size {size}"
+            )
+        except Exception as e:
+            log.exception(e, f"creating collection {settings.QDRANT_COLLECTION}")
+            raise
 
 
 def upsert_embedding(point_id: int, embedding: List[float], user_id: int) -> None:
     client = get_qdrant()
     ensure_collection(vector_size=len(embedding))
-    client.upsert(
-        collection_name=settings.QDRANT_COLLECTION,
-        points=[
-            qm.PointStruct(
-                id=point_id,
-                vector=embedding,
-                payload={"user_id": user_id},
-            )
-        ],
-        wait=True,
-    )
+    try:
+        client.upsert(
+            collection_name=settings.QDRANT_COLLECTION,
+            points=[
+                qm.PointStruct(
+                    id=point_id,
+                    vector=embedding,
+                    payload={"user_id": user_id},
+                )
+            ],
+            wait=True,
+        )
+    except Exception as e:
+        log.exception(e, f"upserting embedding for user {user_id}")
+        raise
 
 
 def delete_embedding(point_id: int) -> None:
@@ -53,8 +69,8 @@ def delete_embedding(point_id: int) -> None:
             points_selector=qm.PointIdsList(points=[point_id]),
             wait=True,
         )
-    except Exception:
-        pass
+    except Exception as e:
+        log.exception(e, f"deleting embedding with point_id {point_id}")
 
 
 def delete_embeddings_by_user(user_id: int) -> None:
@@ -74,5 +90,5 @@ def delete_embeddings_by_user(user_id: int) -> None:
             ),
             wait=True,
         )
-    except Exception:
-        pass
+    except Exception as e:
+        log.exception(e, f"deleting embeddings for user {user_id}")

@@ -57,6 +57,7 @@ docker-compose -f "$COMPOSE_FILE" down -v || true
 echo "Ensuring network '$NETWORK_NAME' exists..."
 docker network create "$NETWORK_NAME" >/dev/null 2>&1 || true
 
+
 if [[ "$REBUILD" == "true" ]]; then
   echo "Rebuilding app_test image..."
   docker-compose -f "$COMPOSE_FILE" build app_test

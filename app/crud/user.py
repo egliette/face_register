@@ -49,7 +49,6 @@ def delete_user(db: Session, user_id: int) -> bool:
     # Delete all face embeddings for this user from Qdrant
     delete_embeddings_by_user(user_id)
 
-    # Delete the user
     db.delete(db_user)
     db.commit()
     return True

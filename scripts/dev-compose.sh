@@ -63,6 +63,34 @@ docker-compose -f "$COMPOSE_FILE" down -v || true
 echo "Ensuring network '$NETWORK_NAME' exists..."
 docker network create "$NETWORK_NAME" >/dev/null 2>&1 || true
 
+# Load environment variables
+if [[ -f "${REPO_ROOT}/.env" ]]; then
+  echo "Loading environment variables from .env..."
+  set -a
+  source "${REPO_ROOT}/.env"
+  set +a
+else
+  echo "Warning: .env file not found. Using default values."
+  LOG_DIR="logs"
+  APP_UID="1000"
+  APP_GID="1000"
+fi
+
+# Create logs directory
+echo "Creating logs directory: ${LOG_DIR:-logs}"
+mkdir -p "${REPO_ROOT}/${LOG_DIR:-logs}"
+
+echo "Setting ownership of logs directory to app user (UID: ${APP_UID:-1000}, GID: ${APP_GID:-1000})..."
+if chown "${APP_UID:-1000}:${APP_GID:-1000}" "${REPO_ROOT}/${LOG_DIR:-logs}" 2>/dev/null; then
+  echo "✓ Successfully changed ownership of logs directory"
+else
+  echo "⚠ Failed to change ownership of logs directory"
+  echo "  This might be because you need to run with sudo or the UID/GID don't match your user"
+  echo "  You can run this command manually:"
+  echo "  sudo chown ${APP_UID:-1000}:${APP_GID:-1000} ${REPO_ROOT}/${LOG_DIR:-logs}"
+  echo "  Or run the script with sudo: sudo $0"
+fi
+
 if [[ "$REBUILD" == "true" ]]; then
   echo "Rebuilding app image..."
   docker-compose -f "$COMPOSE_FILE" build app
