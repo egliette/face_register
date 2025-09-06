@@ -19,14 +19,18 @@ RUN pip install --upgrade pip
 
 COPY pyproject.toml .
 
+RUN pip install --no-cache-dir ".[test]"
+
+ARG APP_UID=1000
+ARG APP_GID=1000
+
+RUN groupadd --gid ${APP_GID} app && \
+    useradd --uid ${APP_UID} --gid ${APP_GID} --create-home --shell /bin/bash app
 
 FROM base as production
-RUN pip install --no-cache-dir .
 
 COPY app/ ./app/
-
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
+RUN chown -R app:app /app
 USER app
 
 EXPOSE 8000
@@ -38,22 +42,17 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 
 FROM base as test
-RUN pip install --no-cache-dir ".[test]"
 
 COPY app/ ./app/
-
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
+RUN chown -R app:app /app
 USER app
 
 CMD ["pytest", "-v", "-m", "not model_dependent", "app/tests"]
 
 
 FROM base as development
-RUN pip install --no-cache-dir ".[test]"
 
-RUN useradd --create-home --shell /bin/bash app \
-    && chown -R app:app /app
+RUN chown -R app:app /app
 USER app
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
