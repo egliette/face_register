@@ -7,7 +7,7 @@ from app.schema.face_embedding import FaceEmbeddingCreate
 
 
 def create_face_embedding(db: Session, data: FaceEmbeddingCreate) -> FaceEmbedding:
-    record = FaceEmbedding(user_id=data.user_id)
+    record = FaceEmbedding(user_id=data.user_id, image_path=data.image_path)
     db.add(record)
     db.commit()
     db.refresh(record)

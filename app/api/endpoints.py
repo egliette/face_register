@@ -1,23 +1,22 @@
-import time
 from typing import List
 
-import cv2
-import numpy as np
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.runtime import get_arcface, get_scrfd
 from app.crud.face_embedding import (
-    create_face_embedding,
     delete_face_embedding,
     get_face_embedding,
     get_face_embeddings_by_user,
 )
 from app.crud.user import create_user, delete_user, get_user, get_users, update_user
 from app.database.connection import get_db
-from app.schema.face_embedding import FaceEmbedding, FaceEmbeddingCreate
+from app.schema.face_embedding import FaceEmbeddingPublic
+from app.schema.media import FaceImageURL
 from app.schema.user import User, UserCreate, UserUpdate
-from app.services.qdrant import delete_embedding, upsert_embedding
+from app.services.face_enrollment import face_enrollment_service
+from app.services.minio import minio_service
+from app.services.qdrant import delete_embedding
 from app.utils.logger import log
 
 router = APIRouter()
@@ -79,7 +78,7 @@ def delete_user_by_id(user_id: int, db: Session = Depends(get_db)):
 
 @router.post(
     "/users/{user_id}/enroll",
-    response_model=FaceEmbedding,
+    response_model=FaceEmbeddingPublic,
     status_code=status.HTTP_201_CREATED,
 )
 def enroll_face(
@@ -87,95 +86,35 @@ def enroll_face(
     image: UploadFile = File(..., media_type="image/*"),
     db: Session = Depends(get_db),
 ):
-    start_time = time.time()
-    log.info(f"Starting face enrollment for user {user_id}, file: {image.filename}")
-
-    allowed_content_types = {"image/jpeg", "image/png", "image/webp"}
-    if image.content_type not in allowed_content_types:
-        log.warn(f"Unsupported file type for user {user_id}: {image.content_type}")
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Unsupported file type. Allowed: image/jpeg, image/png, image/webp",
-        )
-
-    try:
-        data = image.file.read()
-        if not data:
-            log.warn(f"Empty image upload for user {user_id}")
-            raise HTTPException(status_code=400, detail="Empty image upload")
-
-        nparr = np.frombuffer(data, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if img is None:
-            log.warn(f"Invalid image data for user {user_id}")
-            raise HTTPException(status_code=400, detail="Invalid image data")
-
-        log.bug(f"Image loaded successfully for user {user_id}, size: {img.shape}")
-    except Exception as e:
-        log.exception(e, f"processing image for user {user_id}")
-        raise
-
-    try:
-        scrfd = get_scrfd()
-        faces = scrfd.detect(img, max_num=1)
-        log.bug(
-            f"Face detection completed for user {user_id}, found {len(faces)} faces"
-        )
-
-        if len(faces) == 0:
-            log.warn(f"No face detected in image for user {user_id}")
-            raise HTTPException(status_code=422, detail="No face detected")
-        if len(faces) > 1:
-            log.warn(f"Multiple faces detected in image for user {user_id}")
-            raise HTTPException(status_code=422, detail="Multiple faces detected")
-
-        face = faces[0]
-        if getattr(face, "keypoint", None) is None:
-            log.warn(f"No landmarks available for user {user_id}")
-            raise HTTPException(
-                status_code=422, detail="No landmarks available for alignment"
-            )
-
-        log.bug(f"Face detection successful for user {user_id}, score: {face.score}")
-    except HTTPException:
-        raise
-    except Exception as e:
-        log.exception(e, f"face detection for user {user_id}")
-        raise
-
-    try:
-        arc = get_arcface()
-        embedding = arc.detect(img, landmarks=face.keypoint)
-        log.bug(
-            f"Face embedding extracted for user {user_id}, dimension: {len(embedding)}"
-        )
-    except Exception as e:
-        log.exception(e, f"face embedding extraction for user {user_id}")
-        raise
-
-    try:
-        record = create_face_embedding(
-            db, FaceEmbeddingCreate(user_id=user_id, embedding=embedding.tolist())
-        )
-
-        upsert_embedding(
-            point_id=record.id, embedding=embedding.tolist(), user_id=user_id
-        )
-        duration = time.time() - start_time
-        log.perf("face_enrollment", duration, user_id=user_id, file_size=len(data))
-
-        return record
-    except Exception as e:
-        log.exception(e, f"saving face embedding for user {user_id}")
-        raise
+    """Enroll a user's face by processing the uploaded image."""
+    return face_enrollment_service.enroll_face(user_id, image, db)
 
 
 @router.get(
     "/users/{user_id}/face-embeddings",
-    response_model=List[FaceEmbedding],
+    response_model=List[FaceEmbeddingPublic],
 )
 def list_user_face_embeddings(user_id: int, db: Session = Depends(get_db)):
     return get_face_embeddings_by_user(db, user_id=user_id)
+
+
+@router.get(
+    "/users/{user_id}/face-images",
+    response_model=List[FaceImageURL],
+)
+def list_user_face_images(user_id: int, db: Session = Depends(get_db)):
+    """Return only presigned URLs for user's face images without exposing internal paths."""
+    records = get_face_embeddings_by_user(db, user_id=user_id)
+    urls: List[FaceImageURL] = []
+    for rec in records:
+        path = getattr(rec, "image_path", None)
+        if path:
+            try:
+                url = minio_service.get_face_image_url(path)
+                urls.append(FaceImageURL(url=url))
+            except Exception:
+                continue
+    return urls
 
 
 @router.delete(

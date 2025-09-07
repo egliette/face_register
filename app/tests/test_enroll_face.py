@@ -99,6 +99,89 @@ def test_enroll_face_api_success(clean_db, test_user, client):
     assert "user_id" in data
     assert "created_at" in data
     assert data["user_id"] == test_user.id
+    assert "image_path" not in data
+
+
+@pytest.mark.model_dependent
+def test_enroll_face_stores_image_and_path_in_db(clean_db, test_user, client):
+    """Ensure MinIO upload occurs and image_path is saved in DB but not returned."""
+    from app.config.settings import settings
+    from app.crud.face_embedding import get_face_embeddings_by_user
+
+    repo_root = Path(__file__).resolve().parents[1]
+    load_dotenv(dotenv_path=repo_root / ".env")
+
+    face_image_path = Path("assets/images/face.png")
+    assert face_image_path.exists(), f"face.png image must exist in {face_image_path}"
+
+    with open(face_image_path, "rb") as f:
+        resp = client.post(
+            f"/api/users/{test_user.id}/enroll",
+            files={"image": ("face.png", f, "image/png")},
+        )
+
+    assert resp.status_code == 201
+    body = resp.json()
+    assert "image_path" not in body
+
+    records = get_face_embeddings_by_user(clean_db, user_id=test_user.id)
+    assert len(records) == 1
+    db_record = records[0]
+    assert getattr(db_record, "image_path", None), "image_path should be stored in DB"
+
+    endpoint = settings.MINIO_ENDPOINT
+    access_key = settings.MINIO_ACCESS_KEY
+    secret_key = settings.MINIO_SECRET_KEY
+    secure = settings.MINIO_SECURE
+    bucket = settings.FACE_IMAGES_BUCKET
+
+    client_minio = Minio(
+        endpoint, access_key=access_key, secret_key=secret_key, secure=secure
+    )
+    obj_stat = client_minio.stat_object(bucket, db_record.image_path)
+    assert obj_stat is not None
+
+    try:
+        client_minio.remove_object(bucket, db_record.image_path)
+    except Exception:
+        pass
+
+
+@pytest.mark.model_dependent
+def test_list_user_face_images_returns_presigned_urls(clean_db, test_user, client):
+    """After enrollment, the face-images endpoint should return presigned URLs."""
+    face_image_path = Path("assets/images/face.png")
+    assert face_image_path.exists(), f"face.png image must exist in {face_image_path}"
+
+    with open(face_image_path, "rb") as f:
+        enroll_resp = client.post(
+            f"/api/users/{test_user.id}/enroll",
+            files={"image": ("face.png", f, "image/png")},
+        )
+    assert enroll_resp.status_code == 201
+
+    resp = client.get(f"/api/users/{test_user.id}/face-images")
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert isinstance(payload, list)
+    assert len(payload) >= 1
+    for item in payload:
+        assert "url" in item
+        url = item["url"]
+        assert isinstance(url, str)
+        assert url.startswith("http")
+
+
+def test_list_user_face_images_empty_for_new_user(clean_db, client):
+    """If user has no images, endpoint should return an empty list."""
+    user_payload = {"name": "No Image User", "phone": "0000000000"}
+    user_resp = client.post("/api/users/", json=user_payload)
+    assert user_resp.status_code == 201
+    user_id = user_resp.json()["id"]
+
+    resp = client.get(f"/api/users/{user_id}/face-images")
+    assert resp.status_code == 200
+    assert resp.json() == []
 
 
 @pytest.mark.model_dependent

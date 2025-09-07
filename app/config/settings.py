@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     SCRFD_MODEL_OBJECT: str = "scrfd/scrfd_640x640_kps.onnx"
     ARCFACE_BUCKET: str = "models"
     ARCFACE_MODEL_OBJECT: str = "arcface/arcface_r100_glint360k.onnx"
+    FACE_IMAGES_BUCKET: str = "face-images"
 
     # Qdrant vector DB
     QDRANT_URL: str = "http://localhost:6333"
