@@ -1,11 +1,11 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools >= 61.0", "wheel", "setuptools-git-versioning>=2.0,<3"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "face-register"
-version = "0.1.0"
-description = "A FastAPI application for managing user metadata with PostgreSQL database"
+dynamic = ["version"]
+description = "A FastAPI application for face registration"
 authors = [
     {name = "Face Register Team", email = "team@example.com"}
 ]
@@ -50,3 +50,9 @@ markers = [
 [tool.setuptools.packages.find]
 include = ["app*"]
 exclude = ["assets*"]
+
+[tool.setuptools-git-versioning]
+enabled = true
+dev_template = "{tag}"
+dirty_template = "{tag}"
+tag_filter = "v?\\d+(\\.\\d+)*.*"
