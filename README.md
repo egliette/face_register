@@ -1,6 +1,6 @@
 # Face Register Service
 
-![CI Pipeline](https://github.com/minhtu-face/face_register/actions/workflows/ci.yml/badge.svg)
+[![CI Pipeline](https://github.com/egliette/face_register/actions/workflows/ci.yml/badge.svg)](https://github.com/egliette/face_register/actions/workflows/ci.yml)
 
 A face registration system for capturing user metadata and storing it in the database.
 
