@@ -6,7 +6,7 @@ on:
       - develop
   pull_request:
     branches:
-      - develop
+      - main
 
 env:
   PYTHON_VERSION: "3.11"
