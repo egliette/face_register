@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 61.0", "wheel", "setuptools-git-versioning>=2.0,<3"]
+requires = ["setuptools >= 61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,7 @@ name = "face-register"
 dynamic = ["version"]
 description = "A FastAPI application for face registration"
 authors = [
-    {name = "Face Register Team", email = "team@example.com"}
+    {name = "Egliette", email = "leminhtu74@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -51,8 +51,5 @@ markers = [
 include = ["app*"]
 exclude = ["assets*"]
 
-[tool.setuptools-git-versioning]
-enabled = true
-dev_template = "{tag}"
-dirty_template = "{tag}"
-tag_filter = "v?\\d+(\\.\\d+)*.*"
+[tool.setuptools.dynamic]
+version = {file = "app/VERSION"}

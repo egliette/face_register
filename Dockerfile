@@ -17,7 +17,13 @@ RUN apt-get update && \
 RUN python3 -m pip install --upgrade setuptools wheel
 RUN pip install --upgrade pip
 
+ARG VERSION=0.0.0
+ENV APP_VERSION=${VERSION}
+
 COPY pyproject.toml .
+COPY app/ ./app/
+
+RUN mkdir -p app && printf "%s" "${APP_VERSION}" > app/VERSION
 
 RUN pip install --no-cache-dir ".[test]"
 
@@ -29,7 +35,6 @@ RUN groupadd --gid ${APP_GID} app && \
 
 FROM base as production
 
-COPY app/ ./app/
 RUN chown -R app:app /app
 USER app
 
@@ -43,7 +48,6 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 FROM base as test
 
-COPY app/ ./app/
 RUN chown -R app:app /app
 USER app
 

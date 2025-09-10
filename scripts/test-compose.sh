@@ -59,8 +59,13 @@ docker network create "$NETWORK_NAME" >/dev/null 2>&1 || true
 
 
 if [[ "$REBUILD" == "true" ]]; then
-  echo "Rebuilding app_test image..."
-  docker-compose -f "$COMPOSE_FILE" build app_test
+  echo "Determining build version from latest tag..."
+  VERSION="$(git -C "$REPO_ROOT" describe --tags --abbrev=0 2>/dev/null || true)"
+  VERSION="${VERSION#v}"
+  if [[ -z "${VERSION}" ]]; then VERSION="0.0.0"; fi
+
+  echo "Rebuilding app_test image with VERSION=${VERSION}..."
+  docker-compose -f "$COMPOSE_FILE" build --build-arg VERSION="${VERSION}" app_test
 fi
 
 echo "Starting dependencies (postgres, minio, qdrant)..."
