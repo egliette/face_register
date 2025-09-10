@@ -2,9 +2,13 @@ name: CI Pipeline
 
 on:
   push:
-    branches-ignore: [ main ]
+    branches-ignore:
+      - main
+      - develop
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - develop
 
 env:
   PYTHON_VERSION: "3.11"

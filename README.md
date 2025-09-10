@@ -1,6 +1,7 @@
 # Face Register Service
 
 [![CI Pipeline](https://github.com/egliette/face_register/actions/workflows/ci.yml/badge.svg)](https://github.com/egliette/face_register/actions/workflows/ci.yml)
+[![Publish Release to GHCR](https://github.com/egliette/face_register/actions/workflows/publish-release.yml/badge.svg)](https://github.com/egliette/face_register/actions/workflows/publish-release.yml)
 
 A face registration system for capturing user metadata and storing it in the database.
 
