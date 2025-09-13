@@ -92,3 +92,33 @@ def delete_embeddings_by_user(user_id: int) -> None:
         )
     except Exception as e:
         log.exception(e, f"deleting embeddings for user {user_id}")
+
+
+def search_similar_embeddings(
+    query_embedding: List[float], limit: int = 10, score_threshold: float = 0.0
+) -> List[qm.ScoredPoint]:
+    """Search for similar embeddings in Qdrant collection.
+
+    Args:
+        query_embedding: The embedding vector to search for
+        limit: Maximum number of results to return
+        score_threshold: Minimum similarity score threshold
+
+    Returns:
+        List of ScoredPoint objects with similar embeddings
+    """
+    client = get_qdrant()
+    try:
+        results = client.search(
+            collection_name=settings.QDRANT_COLLECTION,
+            query_vector=query_embedding,
+            limit=limit,
+            score_threshold=score_threshold,
+            with_payload=True,
+            with_vectors=False,
+        )
+        log.bug(f"Qdrant search completed, found {len(results)} results")
+        return results
+    except Exception as e:
+        log.exception(e, f"searching similar embeddings")
+        raise

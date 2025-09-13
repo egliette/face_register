@@ -14,6 +14,7 @@ A face registration system for capturing user metadata and storing it in the dat
 Face Register is a FastAPI-based application that provides:
 
 * **Face Detection & Recognition** with SCRFD + ArcFace (via ONNX Runtime)
+* **Face Comparison & Search** - Compare faces against database with similarity scoring
 * **User Management** with PostgreSQL + SQLAlchemy ORM
 * **Vector Search** using Qdrant
 * **Model & Image Storage** in MinIO
@@ -65,6 +66,5 @@ Face Register is a FastAPI-based application that provides:
 
 ## ✅ TODO
 
-* [ ] Add **Continuous Deployment (CD)** pipeline
-* [ ] Prepare **Production Deployment** configuration (security, scaling, monitoring)
-* [ ] Serve models with Triton Server
+* [ ] Use models from another machine
+* [ ] Add auth for API
