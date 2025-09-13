@@ -25,9 +25,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
           DEFAULT_BUMP: patch
-          MAJOR_STRING_TOKEN: "bump:major|BREAKING CHANGE"
-          MINOR_STRING_TOKEN: "bump:minor|feat"
-          PATCH_STRING_TOKEN: "bump:patch|fix"
+          MAJOR_STRING_TOKEN: "BREAKING CHANGE"
+          MINOR_STRING_TOKEN: "feat"
+          PATCH_STRING_TOKEN: "fix"
 
       - name: Create GitHub Release
         if: ${{ steps.bump.outputs.new_tag != steps.bump.outputs.old_tag }}
