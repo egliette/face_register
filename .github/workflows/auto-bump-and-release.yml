@@ -18,16 +18,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Bump version
+      - name: Git Automatic Semantic Versioning
         id: bump
-        uses: anothrNick/github-tag-action@v1
+        uses: bitshifted/git-auto-semver@v1.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
-          DEFAULT_BUMP: patch
-          MAJOR_STRING_TOKEN: "bump:major"
-          MINOR_STRING_TOKEN: "bump:minor"
-          PATCH_STRING_TOKEN: "bump:patch"
 
       - name: Create GitHub Release
         if: ${{ steps.bump.outputs.new_tag != steps.bump.outputs.old_tag }}
