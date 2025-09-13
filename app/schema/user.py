@@ -18,6 +18,12 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
 
 
+class UserPublic(BaseModel):
+    id: int
+    name: str
+    phone: Optional[str] = None
+
+
 class User(UserBase):
     id: int
     created_at: datetime

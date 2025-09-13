@@ -211,5 +211,5 @@ def test_enroll_face_api_empty_image(clean_db, test_user, client):
         files={"image": ("empty.png", b"", "image/png")},
     )
 
-    assert response.status_code == 400
-    assert "Empty image upload" in response.json()["detail"]
+    assert response.status_code == 422
+    assert "Empty image file" in response.json()["detail"]

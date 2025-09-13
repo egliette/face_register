@@ -1,7 +1,6 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.crud.face_embedding import (
@@ -11,9 +10,11 @@ from app.crud.face_embedding import (
 )
 from app.crud.user import create_user, delete_user, get_user, get_users, update_user
 from app.database.connection import get_db
+from app.schema.face_comparison import FaceMatch
 from app.schema.face_embedding import FaceEmbeddingPublic
 from app.schema.media import FaceImageURL
 from app.schema.user import User, UserCreate, UserUpdate
+from app.services.face_comparison import face_comparison_service
 from app.services.face_enrollment import face_enrollment_service
 from app.services.minio import minio_service
 from app.services.qdrant import delete_embedding
@@ -123,7 +124,6 @@ def list_user_face_images(user_id: int, db: Session = Depends(get_db)):
 )
 def delete_face_embedding_by_id(embedding_id: int, db: Session = Depends(get_db)):
     """Delete a specific face embedding by ID."""
-    # First get the embedding to check if it exists
     embedding = get_face_embedding(db, embedding_id)
     if not embedding:
         raise HTTPException(
@@ -140,3 +140,50 @@ def delete_face_embedding_by_id(embedding_id: int, db: Session = Depends(get_db)
         )
 
     return None
+
+
+@router.post(
+    "/face-comparison",
+    response_model=List[FaceMatch],
+    status_code=status.HTTP_200_OK,
+)
+def compare_face(
+    image: UploadFile = File(..., media_type="image/*"),
+    threshold: float = 0.6,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+):
+    import time
+
+    start_time = time.time()
+
+    try:
+        if threshold < 0.0 or threshold > 1.0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Threshold must be between 0.0 and 1.0",
+            )
+
+        if limit < 1 or limit > 100:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Limit must be between 1 and 100",
+            )
+
+        matches = face_comparison_service.compare_face(
+            image=image, db=db, threshold=threshold, limit=limit
+        )
+        processing_time = (time.time() - start_time) * 1000
+        log.info(
+            f"Face comparison completed: {len(matches)} matches found in {processing_time:.2f}ms"
+        )
+        return matches
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        log.exception(e, "face comparison endpoint")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Face comparison failed",
+        )
