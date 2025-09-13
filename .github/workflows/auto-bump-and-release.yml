@@ -18,15 +18,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install semantic-release
-        run: npm install -g semantic-release @semantic-release/git @semantic-release/github @semantic-release/changelog
-
-      - name: Run Semantic Release
+      - name: Bump version
+        id: bump
+        uses: anothrNick/github-tag-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: semantic-release
+          WITH_V: true
+          DEFAULT_BUMP: patch
+          MAJOR_STRING_TOKEN: "bump:major|BREAKING CHANGE"
+          MINOR_STRING_TOKEN: "bump:minor|feat"
+          PATCH_STRING_TOKEN: "bump:patch|fix"
+
+      - name: Create GitHub Release
+        if: ${{ steps.bump.outputs.new_tag != steps.bump.outputs.old_tag }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.bump.outputs.new_tag }}
+          name: Release ${{ steps.bump.outputs.new_tag }}
+          generate_release_notes: true
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
