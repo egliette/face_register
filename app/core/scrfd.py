@@ -37,7 +37,6 @@ class SCRFD:
         )
         self.nms_thresh = nms_thresh
         self.det_thresh = det_thresh
-        self.batched = False
 
         # Cache for anchor center coordinates to avoid recomputation across frames
         self.center_cache: Dict[Tuple[int, int, int], np.ndarray] = {}
@@ -58,8 +57,11 @@ class SCRFD:
             self.input_size = tuple(self.input_shape[2:4][::-1])
 
         outputs = self.session.get_outputs()
-        if len(outputs[0].shape) == 3:
-            self.batched = True
+        # Require batched output tensors. If the model lacks a batch dimension, raise.
+        if len(outputs[0].shape) != 3:
+            raise ValueError(
+                "SCRFD requires a batched model with outputs shaped as (B, ..., ...)."
+            )
         self.output_names: List[str] = []
         for o in outputs:
             self.output_names.append(o.name)
@@ -149,12 +151,12 @@ class SCRFD:
         kpss_list = []
 
         for idx, stride in enumerate(self._feat_stride_fpn):
-            get = (lambda x: x[0]) if self.batched else (lambda x: x)
             fmc = len(self._feat_stride_fpn)
 
-            scores = get(output[idx])
-            bbox_preds = get(output[idx + fmc]) * stride
-            kps_preds = get(output[idx + fmc * 2]) * stride if self.use_kps else None
+            # outputs passed here are per-sample (no batch dimension)
+            scores = output[idx]
+            bbox_preds = output[idx + fmc] * stride
+            kps_preds = output[idx + fmc * 2] * stride if self.use_kps else None
 
             height = input_height // stride
             width = input_width // stride
@@ -401,23 +403,17 @@ class SCRFD:
 
         return boxes, scores, keypoints
 
-    def detect(
-        self, img: np.ndarray, max_num: int = -1, metric: str = "default"
+    def _detect_with_outputs(
+        self,
+        model_input: np.ndarray,
+        outputs: List[np.ndarray],
+        scale_ratio: float,
+        max_num: int,
+        metric: str,
     ) -> List[Face]:
-        """Detect faces in an image.
-
-        Args:
-            img (numpy.ndarray): Input image, shape (H, W, 3)
-            max_num (int): Maximum number of detections to keep
-            metric (str): Filtering metric ('max' or 'default')
-
-        Returns:
-            list[Face]: List of face detections.
-        """
-        model_input, scale_ratio = self.preprocess(img)
-        model_output = self.forward(model_input)
+        """Run postprocess and convert results to faces for a single sample."""
         boxes, scores, keypoints = self.postprocess(
-            model_input, model_output, scale_ratio, max_num, metric
+            model_input, outputs, scale_ratio, max_num, metric
         )
         faces: List[Face] = []
         num_detections = boxes.shape[0]
@@ -434,8 +430,62 @@ class SCRFD:
                 keypoint=kp,
             )
             faces.append(face)
-
         return faces
+
+    def detect(
+        self, img: Any, max_num: int = -1, metric: str = "default"
+    ) -> List[List[Face]]:
+        """Detect faces in one or more images.
+
+        Args:
+            img: A single image `numpy.ndarray` (H, W, 3) or a list/tuple of images.
+            max_num: Maximum number of detections to keep per image.
+            metric: Filtering metric ('max' or 'default').
+
+        Returns:
+            list[list[Face]]: Always a list of per-image detections. Each inner list
+            contains the `Face` detections for the corresponding input image.
+        """
+        # Normalize inputs to a batch
+        if isinstance(img, np.ndarray):
+            images = [img]
+        elif isinstance(img, (list, tuple)):
+            images = list(img)
+        else:
+            raise TypeError(
+                "img must be a numpy.ndarray or a list/tuple of numpy.ndarray images"
+            )
+
+        if len(images) == 0:
+            return []
+
+        blobs: List[np.ndarray] = []
+        scale_ratios: List[float] = []
+        for im in images:
+            blob, ratio = self.preprocess(im)
+            blobs.append(blob)
+            scale_ratios.append(ratio)
+
+        # Concatenate along batch dimension: shape (B, 3, H, W)
+        batched_input = np.concatenate(blobs, axis=0)
+        batched_output = self.forward(batched_input)
+
+        results: List[List[Face]] = []
+        batch_size = batched_input.shape[0]
+        for b in range(batch_size):
+            # Slice out the b-th sample from batched outputs, removing batch dimension
+            per_sample_output = [out[b] for out in batched_output]
+            per_sample_input = batched_input[b : b + 1]
+            faces_b = self._detect_with_outputs(
+                per_sample_input,
+                per_sample_output,
+                scale_ratios[b],
+                max_num,
+                metric,
+            )
+            results.append(faces_b)
+
+        return results
 
     def draw(
         self, img: np.ndarray, faces: List[Face], labels: Optional[List[str]] = None
