@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 import cv2
 import numpy as np
@@ -50,65 +50,103 @@ class ArcFace:
         for out in outputs:
             self.output_names.append(out.name)
         self.output_shape = outputs[0].shape
+        self.embedding_dim = (
+            self.output_shape[1] if len(self.output_shape) > 1 else self.output_shape[0]
+        )
 
-    def preprocess(self, img: np.ndarray, landmarks: np.ndarray) -> np.ndarray:
-        """Preprocess image and landmarks for face recognition.
+    def preprocess(
+        self, images: List[np.ndarray], landmarks_list: List[np.ndarray]
+    ) -> np.ndarray:
+        """Preprocess a batch of images and landmarks for face recognition.
 
         Args:
-            img (numpy.ndarray): Input image of shape (H, W, 3)
-            landmarks (numpy.ndarray): Facial landmarks of shape (5, 2)
+            images (List[numpy.ndarray]): List of input images, each of shape (H, W, 3)
+            landmarks_list (List[numpy.ndarray]): List of facial landmarks, each of shape (5, 2)
 
         Returns:
-            numpy.ndarray: Preprocessed image blob of shape (1, 3, H, W)
+            numpy.ndarray: Preprocessed image blob of shape (B, 3, H, W)
         """
-        # Align face using landmarks
-        aimg = norm_crop(img, landmark=landmarks, image_size=self.input_size[0])
+        blobs = []
+        for img, landmarks in zip(images, landmarks_list):
+            # Align face using landmarks
+            aimg = norm_crop(img, landmark=landmarks, image_size=self.input_size[0])
 
-        # Convert to blob
-        blob = cv2.dnn.blobFromImage(
-            aimg,
-            1.0 / self.input_std,
-            self.input_size,
-            (self.input_mean,) * 3,
-            swapRB=True,
-        )
-        return blob
+            # Convert to blob
+            blob = cv2.dnn.blobFromImage(
+                aimg,
+                1.0 / self.input_std,
+                self.input_size,
+                (self.input_mean,) * 3,
+                swapRB=True,
+            )
+            blobs.append(blob)
+
+        # Concatenate along batch dimension
+        batched_blob = np.concatenate(blobs, axis=0)
+        return batched_blob
 
     def forward(self, blob: np.ndarray) -> np.ndarray:
         """Run forward pass through the model.
 
         Args:
-            blob (numpy.ndarray): Preprocessed image blob of shape (1, 3, H, W)
+            blob (numpy.ndarray): Preprocessed image blob of shape (B, 3, H, W)
 
         Returns:
-            numpy.ndarray: Model output of shape (1, embedding_dim)
+            numpy.ndarray: Model output of shape (B, embedding_dim)
         """
         net_out = self.session.run(self.output_names, {self.input_name: blob})[0]
         return net_out
 
     def postprocess(self, net_out: np.ndarray) -> np.ndarray:
-        """Postprocess model output to get face embedding.
+        """Postprocess model output to get face embedding(s).
 
         Args:
-            net_out (numpy.ndarray): Model output of shape (1, embedding_dim)
+            net_out (numpy.ndarray): Model output of shape (B, embedding_dim)
 
         Returns:
-            numpy.ndarray: Face embedding vector of shape (embedding_dim,)
+            numpy.ndarray: Face embedding vector(s) of shape (B, embedding_dim)
         """
-        embedding = net_out.flatten()
-        return embedding
+        # Always return the batch dimension for consistency
+        return net_out
 
-    def detect(self, img: np.ndarray, landmarks: np.ndarray) -> np.ndarray:
-        """Detect face embedding from image and landmarks.
+    def detect(
+        self,
+        img: Union[np.ndarray, List[np.ndarray]],
+        landmarks: Union[np.ndarray, List[np.ndarray]],
+    ) -> List[np.ndarray]:
+        """Detect face embedding from image(s) and landmarks.
 
         Args:
-            img (numpy.ndarray): Input image of shape (H, W, 3)
-            landmarks (numpy.ndarray): Facial landmarks of shape (5, 2)
+            img: Input image of shape (H, W, 3) or list of images
+            landmarks: Facial landmarks of shape (5, 2) or list of landmarks
 
         Returns:
-            numpy.ndarray: Face embedding vector of shape (embedding_dim,)
+            List of face embedding vectors, each of shape (embedding_dim,)
         """
+        if isinstance(img, np.ndarray):
+            img = [img]
+            landmarks = [landmarks]
+
+        if not isinstance(img, (list, tuple)) or not isinstance(
+            landmarks, (list, tuple)
+        ):
+            raise TypeError(
+                "img must be a numpy.ndarray or a list/tuple of numpy.ndarray images"
+            )
+
+        if len(img) != len(landmarks):
+            raise ValueError("Number of images must match number of landmarks")
+
+        if len(img) == 0:
+            return []
+
         blob = self.preprocess(img, landmarks)
         net_out = self.forward(blob)
-        embedding = self.postprocess(net_out)
-        return embedding
+        embeddings = self.postprocess(net_out)
+
+        # Convert to list of individual embeddings
+        result = []
+        for i in range(embeddings.shape[0]):
+            result.append(embeddings[i])
+
+        return result

@@ -75,8 +75,11 @@ def test_face_detection_and_embedding():
     from app.core.arcface import ArcFace
 
     arc = ArcFace(model_file=str(arcface_local_path))
-    embedding = arc.detect(img, landmarks=face.keypoint)
+    embeddings = arc.detect(img, landmarks=face.keypoint)
 
+    assert isinstance(embeddings, list), "Embeddings should be a list"
+    assert len(embeddings) == 1, "Should return exactly one embedding"
+    embedding = embeddings[0]
     assert isinstance(embedding, np.ndarray), "Embedding should be numpy array"
     assert embedding.ndim == 1, f"Expected 1D embedding, got {embedding.ndim}D"
     assert embedding.shape[0] > 0, "Embedding should have positive length"

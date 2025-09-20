@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
 import onnxruntime
 
-from app.utils.face_core import distance2bbox, distance2kps, nms, softmax
+from app.utils.face_core import distance2bbox, distance2kps, nms
 
 
 @dataclass
@@ -126,7 +126,23 @@ class SCRFD:
         return blob, scale_ratio
 
     def forward(self, input: np.ndarray) -> List[np.ndarray]:
+        """Run inference on the SCRFD model.
+
+        Args:
+            input: Input tensor with shape (batch_size, 3, height, width).
+                Example: (3, 3, 640, 640) for batch of 3 images
+
+        Returns:
+            List of 9 output tensors:
+            - Outputs 0-2: Score predictions, shape (batch_size, num_anchors, 1)
+            - Outputs 3-5: Bounding box predictions, shape (batch_size, num_anchors, 4)
+            - Outputs 6-8: Keypoint predictions, shape (batch_size, num_anchors, 10)
+                Example: [(3, 12800, 1), (3, 3200, 1), (3, 800, 1),
+                         (3, 12800, 4), (3, 3200, 4), (3, 800, 4),
+                         (3, 12800, 10), (3, 3200, 10), (3, 800, 10)]
+        """
         output = self.session.run(self.output_names, {self.input_name: input})
+
         return output
 
     def _process_all_feature_maps(
@@ -433,18 +449,20 @@ class SCRFD:
         return faces
 
     def detect(
-        self, img: Any, max_num: int = -1, metric: str = "default"
+        self,
+        img: Union[np.ndarray, List[np.ndarray]],
+        max_num: int = -1,
+        metric: str = "default",
     ) -> List[List[Face]]:
         """Detect faces in one or more images.
 
         Args:
-            img: A single image `numpy.ndarray` (H, W, 3) or a list/tuple of images.
-            max_num: Maximum number of detections to keep per image.
-            metric: Filtering metric ('max' or 'default').
+            img: A single image `numpy.ndarray` (H, W, 3) or a list/tuple of images
+            max_num: Maximum number of detections to keep per image
+            metric: Filtering metric ('max' or 'default')
 
         Returns:
-            list[list[Face]]: Always a list of per-image detections. Each inner list
-            contains the `Face` detections for the corresponding input image.
+            List of face detection results, each containing a list of `Face` objects
         """
         # Normalize inputs to a batch
         if isinstance(img, np.ndarray):

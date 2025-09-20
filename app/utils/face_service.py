@@ -77,7 +77,8 @@ def extract_face_embedding(img: np.ndarray, face) -> np.ndarray:
     """Extract face embedding given the face landmarks."""
     try:
         arc = get_arcface()
-        embedding = arc.detect(img, landmarks=face.keypoint)
+        embeddings = arc.detect(img, face.keypoint)
+        embedding = embeddings[0]
         log.bug(f"Face embedding extracted, dimension: {len(embedding)}")
         return embedding
     except Exception as exc:

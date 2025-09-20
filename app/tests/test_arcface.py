@@ -56,8 +56,11 @@ def test_arcface_detect_returns_embedding():
     )
 
     arc = ArcFace(model_file=str(local_model_path))
-    emb = arc.detect(img, landmarks)
+    embeddings = arc.detect(img, landmarks)
 
     # Type assertions only (do not require a specific embedding size)
+    assert isinstance(embeddings, list)
+    assert len(embeddings) == 1
+    emb = embeddings[0]
     assert isinstance(emb, np.ndarray)
     assert emb.ndim == 1
