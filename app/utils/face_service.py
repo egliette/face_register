@@ -46,7 +46,8 @@ def detect_face_in_image(img: np.ndarray):
     """Detect exactly one face and ensure landmarks exist."""
     try:
         scrfd = get_scrfd()
-        faces = scrfd.detect(img, max_num=1)
+        faces_batch = scrfd.detect(img, max_num=1)
+        faces = faces_batch[0] if faces_batch else []
         log.bug(f"Face detection completed, found {len(faces)} faces")
 
         if len(faces) == 0:

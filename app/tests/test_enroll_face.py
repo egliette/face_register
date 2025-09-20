@@ -62,8 +62,9 @@ def test_face_detection_and_embedding():
     scrfd = SCRFD(model_file=str(scrfd_local_path))
     faces = scrfd.detect(img, max_num=1)
 
-    assert len(faces) == 1, f"Expected 1 face, got {len(faces)}"
-    face = faces[0]
+    assert len(faces) == 1, f"Expected 1 image result, got {len(faces)}"
+    assert len(faces[0]) == 1, f"Expected 1 face, got {len(faces[0])}"
+    face = faces[0][0]
     assert hasattr(face, "keypoint"), "Face should have landmarks"
     assert face.keypoint is not None, "Landmarks should not be None"
     assert face.keypoint.shape == (

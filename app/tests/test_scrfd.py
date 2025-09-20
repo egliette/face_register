@@ -48,7 +48,9 @@ def test_scrfd_detect_returns_faces():
 
     # Type assertions only (do not require a face to be present)
     assert isinstance(faces, list)
-    assert all(isinstance(f, Face) for f in faces)
+    assert len(faces) == 1
+    assert isinstance(faces[0], list)
+    assert all(isinstance(f, Face) for f in faces[0])
 
 
 @pytest.mark.model_dependent
