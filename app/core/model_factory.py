@@ -1,8 +1,8 @@
 from functools import lru_cache
 
 from app.config.settings import settings
-from app.core.arcface import ArcFace
-from app.core.scrfd import SCRFD
+from app.core.models.arcface import ArcFace
+from app.core.models.scrfd import SCRFD
 from app.utils.logger import log
 
 
