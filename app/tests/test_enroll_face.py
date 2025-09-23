@@ -57,7 +57,7 @@ def test_face_detection_and_embedding():
     img = cv2.imread(str(face_image_path))
     assert img is not None, "Failed to load face image"
 
-    from app.core.scrfd import SCRFD
+    from app.core.models.scrfd import SCRFD
 
     scrfd = SCRFD(model_file=str(scrfd_local_path))
     faces = scrfd.detect(img, max_num=1)
@@ -72,7 +72,7 @@ def test_face_detection_and_embedding():
         2,
     ), f"Expected landmarks shape (5, 2), got {face.keypoint.shape}"
 
-    from app.core.arcface import ArcFace
+    from app.core.models.arcface import ArcFace
 
     arc = ArcFace(model_file=str(arcface_local_path))
     embeddings = arc.detect(img, landmarks=face.keypoint)

@@ -1,49 +1,14 @@
-import os
-from pathlib import Path
-
 import numpy as np
 import pytest
-from dotenv import load_dotenv
-from minio import Minio
 
 
 @pytest.mark.model_dependent
-def test_scrfd_detect_returns_faces():
-    # Load environment from repo root .env (parent of tests folder)
-    repo_root = Path(__file__).resolve().parents[1]
-    load_dotenv(dotenv_path=repo_root / ".env")
-
-    endpoint = os.getenv("MINIO_ENDPOINT")
-    access_key = os.getenv("MINIO_ACCESS_KEY")
-    secret_key = os.getenv("MINIO_SECRET_KEY")
-    secure = os.getenv("MINIO_SECURE", "false").lower() in ("1", "true", "yes", "y")
-
-    bucket = os.getenv("SCRFD_BUCKET")
-    object_name = os.getenv("SCRFD_MODEL_OBJECT")
-
-    assert (
-        endpoint and access_key and secret_key
-    ), "MinIO credentials (MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY) must be set in .env"
-    assert (
-        bucket and object_name
-    ), "SCRFD bucket/object (SCRFD_BUCKET and SCRFD_MODEL_OBJECT) must be set in .env"
-
-    client = Minio(
-        endpoint, access_key=access_key, secret_key=secret_key, secure=secure
-    )
-
-    # Download model to assets/models/scrfd
-    models_dir = Path("assets/models/scrfd")
-    models_dir.mkdir(parents=True, exist_ok=True)
-    local_model_path = models_dir / Path(object_name).name
-    if not local_model_path.exists():
-        client.fget_object(bucket, object_name, str(local_model_path))
-
-    # Import SCRFD and run detection on a blank image
-    from app.core.scrfd import SCRFD, Face
+def test_scrfd_detect_returns_faces(scrfd_model):
+    # Get model via helper and run detection on a blank image
+    from app.core.models.scrfd import Face
 
     img = np.zeros((480, 640, 3), dtype=np.uint8)
-    scrfd = SCRFD(model_file=str(local_model_path))
+    scrfd = scrfd_model
     faces = scrfd.detect(img)
 
     # Type assertions only (do not require a face to be present)
@@ -54,39 +19,9 @@ def test_scrfd_detect_returns_faces():
 
 
 @pytest.mark.model_dependent
-def test_scrfd_detect_dynamic_batching_returns_faces_lists():
-    # Load environment from repo root .env (parent of tests folder)
-    repo_root = Path(__file__).resolve().parents[1]
-    load_dotenv(dotenv_path=repo_root / ".env")
-
-    endpoint = os.getenv("MINIO_ENDPOINT")
-    access_key = os.getenv("MINIO_ACCESS_KEY")
-    secret_key = os.getenv("MINIO_SECRET_KEY")
-    secure = os.getenv("MINIO_SECURE", "false").lower() in ("1", "true", "yes", "y")
-
-    bucket = os.getenv("SCRFD_BUCKET")
-    object_name = os.getenv("SCRFD_MODEL_OBJECT")
-
-    assert (
-        endpoint and access_key and secret_key
-    ), "MinIO credentials (MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY) must be set in .env"
-    assert (
-        bucket and object_name
-    ), "SCRFD bucket/object (SCRFD_BUCKET and SCRFD_MODEL_OBJECT) must be set in .env"
-
-    client = Minio(
-        endpoint, access_key=access_key, secret_key=secret_key, secure=secure
-    )
-
-    # Download model to assets/models/scrfd
-    models_dir = Path("assets/models/scrfd")
-    models_dir.mkdir(parents=True, exist_ok=True)
-    local_model_path = models_dir / Path(object_name).name
-    if not local_model_path.exists():
-        client.fget_object(bucket, object_name, str(local_model_path))
-
-    # Import SCRFD and run detection on a batch of blank images of different sizes
-    from app.core.scrfd import SCRFD, Face
+def test_scrfd_detect_dynamic_batching_returns_faces_lists(scrfd_model):
+    # Get model via helper and run detection on a batch of blank images of different sizes
+    from app.core.models.scrfd import Face
 
     imgs = [
         np.zeros((480, 640, 3), dtype=np.uint8),
@@ -94,7 +29,7 @@ def test_scrfd_detect_dynamic_batching_returns_faces_lists():
         np.zeros((360, 360, 3), dtype=np.uint8),
     ]
 
-    scrfd = SCRFD(model_file=str(local_model_path))
+    scrfd = scrfd_model
     batch_faces = scrfd.detect(imgs)
 
     # Assertions on batched output structure and types

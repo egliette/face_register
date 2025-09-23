@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from fastapi import HTTPException, UploadFile, status
 
-from app.core.runtime import get_arcface, get_scrfd
+from app.core.model_factory import get_arcface, get_scrfd
 from app.utils.logger import log
 
 
