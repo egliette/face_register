@@ -43,13 +43,17 @@ class CustomTimedRotatingFileHandler(logging.handlers.TimedRotatingFileHandler):
         dirName, baseName = os.path.dirname(self.baseFilename), os.path.basename(
             self.baseFilename
         )
-        # Pattern matches: baseName-YYYY-MM-DD-HH-MM.ext
+        # Pattern matches: service_prefix_YYYY-MM-DD.ext
         fileNames = os.listdir(dirName)
         rotated = []
-        prefix = baseName.rsplit(".", 1)[0] + "-"  # 'service_name-'
         ext = os.path.splitext(baseName)[1]  # '.log'
+        base_without_ext = baseName[: -len(ext)] if ext else baseName
+        # Derive the stable service prefix from the current base filename which is typically
+        # like 'service_prefix_YYYY-MM-DD'. We want to capture 'service_prefix'.
+        match = re.match(r"^(.*?)(?:_\d{4}-\d{2}-\d{2})$", base_without_ext)
+        service_prefix = match.group(1) if match else base_without_ext.rsplit("_", 1)[0]
         pattern = re.compile(
-            rf"^{re.escape(prefix)}\d{{4}}-\d{{2}}-\d{{2}}-\d{{2}}-\d{{2}}{re.escape(ext)}$"
+            rf"^{re.escape(service_prefix)}_\d{{4}}-\d{{2}}-\d{{2}}{re.escape(ext)}$"
         )
         for fn in fileNames:
             if pattern.match(fn):
@@ -81,6 +85,8 @@ class AppLogger:
         self.log_to_stdout: bool = settings.LOG_TO_STDOUT
         self.max_log_days: int = settings.LOG_MAX_DAYS
         self.log_level: int = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
+
+        self._cleanup_old_logs()
 
         self.logger = logging.getLogger(self._service_name.upper())
         self.logger.setLevel(self.log_level)
@@ -118,6 +124,58 @@ class AppLogger:
             console_handler.setLevel(self.log_level)
             console_handler.setFormatter(simple_formatter)
             self.logger.addHandler(console_handler)
+
+    def _cleanup_old_logs(self) -> None:
+        """Remove old log files beyond the retention count at app start.
+
+        Keeps only the most recent `self.max_log_days` files matching pattern
+        `<service_name>_YYYY-MM-DD.log` within `self.log_dir`.
+        """
+        try:
+            if self.max_log_days is None:
+                return
+            # Guard against misconfiguration
+            if self.max_log_days < 1:
+                # If set to 0 or negative, delete all matching logs except today's
+                retention_count = 0
+            else:
+                retention_count = self.max_log_days
+
+            # Build filename pattern and collect candidates
+            ext = ".log"
+            pattern = re.compile(
+                rf"^{re.escape(self._service_name)}_\d{{4}}-\d{{2}}-\d{{2}}{re.escape(ext)}$"
+            )
+
+            # Current active log file (today) should be preserved even if retention is 0
+            today_name = (
+                f"{self._service_name}_{datetime.now().strftime('%Y-%m-%d')}{ext}"
+            )
+
+            candidates = []
+            for fn in os.listdir(self.log_dir):
+                if pattern.match(fn):
+                    candidates.append(fn)
+
+            if not candidates:
+                return
+
+            # Sort by date derived from filename (lexicographic works for YYYY-MM-DD)
+            candidates.sort()
+            keep_set = (
+                set(candidates[-retention_count:]) if retention_count > 0 else set()
+            )
+            keep_set.add(today_name)
+
+            for fn in candidates:
+                if fn not in keep_set:
+                    full_path = self.log_dir / fn
+                    try:
+                        os.remove(full_path)
+                    except OSError:
+                        pass
+        except Exception:
+            pass
 
     def crit(self, msg: str, exc_info: bool = False) -> None:
         """Log critical message."""

@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from fastapi import HTTPException, UploadFile, status
 
-from app.core.runtime import get_arcface, get_scrfd
+from app.core.model_factory import get_arcface, get_scrfd
 from app.utils.logger import log
 
 
@@ -46,7 +46,8 @@ def detect_face_in_image(img: np.ndarray):
     """Detect exactly one face and ensure landmarks exist."""
     try:
         scrfd = get_scrfd()
-        faces = scrfd.detect(img, max_num=1)
+        faces_batch = scrfd.detect(img, max_num=1)
+        faces = faces_batch[0] if faces_batch else []
         log.bug(f"Face detection completed, found {len(faces)} faces")
 
         if len(faces) == 0:
@@ -76,7 +77,8 @@ def extract_face_embedding(img: np.ndarray, face) -> np.ndarray:
     """Extract face embedding given the face landmarks."""
     try:
         arc = get_arcface()
-        embedding = arc.detect(img, landmarks=face.keypoint)
+        embeddings = arc.detect(img, face.keypoint)
+        embedding = embeddings[0]
         log.bug(f"Face embedding extracted, dimension: {len(embedding)}")
         return embedding
     except Exception as exc:

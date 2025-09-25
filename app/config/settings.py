@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     ARCFACE_MODEL_OBJECT: str = "arcface/arcface_r100_glint360k.onnx"
     FACE_IMAGES_BUCKET: str = "face-images"
 
+    # Model runtime configuration
+    MODEL_RUNTIME_TYPE: str = "onnx"
+    TRITON_SERVER_URL: str = "triton:8000"
+
     # Qdrant vector DB
     QDRANT_URL: str = "http://localhost:6333"
     QDRANT_API_KEY: str | None = None

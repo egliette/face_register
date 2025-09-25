@@ -32,6 +32,7 @@ def test_face_comparison_success(clean_db, test_user, client):
     assert len(data) >= 1
 
     match = data[0]
+
     assert "user" in match
     assert "face_embedding_id" in match
     assert "image_path" in match

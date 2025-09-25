@@ -6,10 +6,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}_dev
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${TZ:-UTC}
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     ports:
-      - "5432:5432"
+      - "5439:5432"
     networks:
       - person_detection
     healthcheck:
@@ -24,10 +27,11 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      TZ: ${TZ:-UTC}
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "9009:9000"
+      - "9010:9001"
     volumes:
       - minio_dev_data:/data
     networks:
@@ -41,11 +45,15 @@ services:
   qdrant:
     image: qdrant/qdrant:v1.13.2
     container_name: face_register_qdrant_dev
+    environment:
+      TZ: ${TZ:-UTC}
     ports:
       - "6333:6333"
       - "6334:6334"
     volumes:
       - qdrant_dev_data:/qdrant/storage
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     networks:
       - person_detection
     healthcheck:
@@ -72,9 +80,12 @@ services:
       LOG_TO_STDOUT: ${LOG_TO_STDOUT}
       LOG_LEVEL: ${LOG_LEVEL}
       LOG_MAX_DAYS: ${LOG_MAX_DAYS}
+      TZ: ${TZ:-UTC}
     volumes:
       - ./app:/app/app
       - ./assets:/app/assets
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,6 +106,8 @@ services:
     container_name: face_register_app_dev
     environment:
       DATABASE_URL: ${DATABASE_URL}_dev
+      MODEL_RUNTIME_TYPE: ${MODEL_RUNTIME_TYPE}
+      TRITON_SERVER_URL: ${TRITON_SERVER_URL}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
@@ -116,12 +129,15 @@ services:
       LOG_TO_STDOUT: ${LOG_TO_STDOUT}
       LOG_LEVEL: ${LOG_LEVEL}
       LOG_MAX_DAYS: ${LOG_MAX_DAYS}
+      TZ: ${TZ:-UTC}
     ports:
-      - "8000:8000"
+      - "8009:8000"
     volumes:
       - ./app:/app/app
       - ./assets:/app/assets
       - ./logs:/app/logs
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     depends_on:
       postgres:
         condition: service_healthy
