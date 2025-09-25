@@ -10,9 +10,8 @@ from app.utils.logger import log
 
 @lru_cache(maxsize=1)
 def get_qdrant() -> QdrantClient:
-    log.bug(f"{settings.QDRANT_URL = }")
     return QdrantClient(
-        url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY, timeout=10.0
+        url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY, timeout=30.0
     )
 
 
@@ -109,15 +108,14 @@ def search_similar_embeddings(
     """
     client = get_qdrant()
     try:
-        results = client.search(
+        results = client.query_points(
             collection_name=settings.QDRANT_COLLECTION,
-            query_vector=query_embedding,
+            query=query_embedding,
             limit=limit,
             score_threshold=score_threshold,
             with_payload=True,
             with_vectors=False,
-        )
-        log.bug(f"Qdrant search completed, found {len(results)} results")
+        ).points
         return results
     except Exception as e:
         log.exception(e, f"searching similar embeddings")

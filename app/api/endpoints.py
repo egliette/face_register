@@ -160,13 +160,13 @@ def compare_face(
     try:
         if threshold < 0.0 or threshold > 1.0:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Threshold must be between 0.0 and 1.0",
             )
 
         if limit < 1 or limit > 100:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Limit must be between 1 and 100",
             )
 
