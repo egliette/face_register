@@ -1,13 +1,12 @@
-from functools import lru_cache
-
 from app.config.settings import settings
-from app.core.arcface import ArcFace
-from app.core.scrfd import SCRFD
+from app.core.models.arcface import ArcFace
+from app.core.models.scrfd import SCRFD
 from app.utils.logger import log
 
+_scrfd_instance: SCRFD | None = None
 
-@lru_cache(maxsize=1)
-def get_scrfd() -> SCRFD:
+
+def _create_scrfd() -> SCRFD:
     from pathlib import Path
 
     try:
@@ -28,8 +27,20 @@ def get_scrfd() -> SCRFD:
         raise
 
 
-@lru_cache(maxsize=1)
-def get_arcface() -> ArcFace:
+def get_scrfd() -> SCRFD:
+    global _scrfd_instance
+    runtime = getattr(settings, "MODEL_RUNTIME_TYPE", "onnx").lower()
+    if runtime == "onnx":
+        if _scrfd_instance is None:
+            _scrfd_instance = _create_scrfd()
+        return _scrfd_instance
+    return _create_scrfd()
+
+
+_arcface_instance: ArcFace | None = None
+
+
+def _create_arcface() -> ArcFace:
     from pathlib import Path
 
     try:
@@ -48,3 +59,13 @@ def get_arcface() -> ArcFace:
     except Exception as e:
         log.exception(e, "loading ArcFace model")
         raise
+
+
+def get_arcface() -> ArcFace:
+    global _arcface_instance
+    runtime = getattr(settings, "MODEL_RUNTIME_TYPE", "onnx").lower()
+    if runtime == "onnx":
+        if _arcface_instance is None:
+            _arcface_instance = _create_arcface()
+        return _arcface_instance
+    return _create_arcface()

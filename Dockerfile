@@ -21,11 +21,13 @@ ARG VERSION=0.0.0
 ENV APP_VERSION=${VERSION}
 
 COPY pyproject.toml .
+
+RUN pip install --no-cache-dir ".[test]"
+
 COPY app/ ./app/
 
 RUN mkdir -p app && printf "%s" "${APP_VERSION}" > app/VERSION
 
-RUN pip install --no-cache-dir ".[test]"
 
 ARG APP_UID=1000
 ARG APP_GID=1000

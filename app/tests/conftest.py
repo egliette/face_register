@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.core.model_factory import get_arcface, get_scrfd
 from app.database.connection import SessionLocal
 from app.main import app
 from app.models.face_embedding import FaceEmbedding
@@ -50,3 +51,13 @@ def test_user(db_session: Session):
     db_session.query(FaceEmbedding).filter(FaceEmbedding.user_id == user.id).delete()
     db_session.query(User).filter(User.id == user.id).delete()
     db_session.commit()
+
+
+@pytest.fixture(scope="session")
+def arcface_model():
+    return get_arcface()
+
+
+@pytest.fixture(scope="session")
+def scrfd_model():
+    return get_scrfd()

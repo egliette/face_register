@@ -6,6 +6,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}_test
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     networks:
       - person_detection
     healthcheck:
@@ -20,6 +24,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      TZ: ${TZ:-UTC}
     command: server /data
     networks:
       - person_detection
@@ -47,8 +52,11 @@ services:
       LOG_TO_STDOUT: ${LOG_TO_STDOUT}
       LOG_LEVEL: ${LOG_LEVEL}
       LOG_MAX_DAYS: ${LOG_MAX_DAYS}
+      TZ: ${TZ:-UTC}
     volumes:
       - ./assets:/app/assets
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,6 +68,11 @@ services:
   qdrant:
     image: qdrant/qdrant:v1.13.2
     container_name: face_register_qdrant_test
+    environment:
+      TZ: ${TZ:-UTC}
+    volumes:
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     networks:
       - person_detection
     healthcheck:
@@ -81,6 +94,8 @@ services:
     user: "${APP_UID}:${APP_GID}"
     environment:
       DATABASE_URL: ${DATABASE_URL}_test
+      MODEL_RUNTIME_TYPE: ${MODEL_RUNTIME_TYPE}
+      TRITON_SERVER_URL: ${TRITON_SERVER_URL}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
@@ -102,8 +117,11 @@ services:
       LOG_TO_STDOUT: ${LOG_TO_STDOUT}
       LOG_LEVEL: ${LOG_LEVEL}
       LOG_MAX_DAYS: ${LOG_MAX_DAYS}
+      TZ: ${TZ:-UTC}
     volumes:
       - ./assets:/app/assets
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     depends_on:
       postgres:
         condition: service_healthy
