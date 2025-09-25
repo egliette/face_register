@@ -42,7 +42,10 @@ class TritonProvider(RuntimeProvider):
         outputs = [httpclient.InferRequestedOutput(name) for name in output_names]
 
         response = self.client.infer(
-            model_name=self.model_name, inputs=[inputs], outputs=outputs
+            model_name=self.model_name,
+            inputs=[inputs],
+            outputs=outputs,
+            timeout=60,
         )
 
         output_data = {name: response.as_numpy(name) for name in output_names}

@@ -5,7 +5,51 @@ import cv2
 import numpy as np
 
 from app.core.models.base import BaseModel
+from app.core.runtime.triton_provider import TritonProvider
 from app.utils.face_core import distance2bbox, distance2kps, nms
+
+
+def extract_and_sort_batch_data(
+    output_data: Dict[str, np.ndarray],
+) -> Dict[str, np.ndarray]:
+    """
+    Extracts data from batch dimension and sorts by:
+    1. Second dimension descending (12800, 3200, 800)
+    2. Third dimension ascending (1, 4, 10)
+
+    Args:
+        output_data: Dictionary mapping output names to numpy arrays with batch dimension
+
+    Returns:
+        Dict mapping output names (in their original order) to batched numpy
+        arrays, remapped so that values follow the expected internal order
+        (last_dim asc, middle_dim desc). The batch dimension is preserved.
+    """
+    # Get batch size from any tensor
+    batch_size: int = next(iter(output_data.values())).shape[0]
+
+    # Collect items with their shape-based sort keys
+    sortable_items: List[Tuple[str, np.ndarray, int, int]] = []
+    for name, data in output_data.items():
+        if len(data.shape) >= 3:
+            middle_dim: int = data.shape[1]
+            last_dim: int = data.shape[2]
+            sortable_items.append((name, data, middle_dim, last_dim))
+
+    # Sort by last_dim asc, then middle_dim desc
+    sortable_items.sort(key=lambda t: (t[3], -t[2]))
+
+    # Remap sorted tensors back onto original output names in their original order
+    original_names: List[str] = list(output_data.keys())
+    processed: Dict[str, np.ndarray] = {}
+    for i, name in enumerate(original_names):
+        # Guard against length mismatch
+        if i < len(sortable_items):
+            processed[name] = sortable_items[i][1]
+        else:
+            processed[name] = output_data[name]
+
+    return processed
 
 
 @dataclass
@@ -28,20 +72,18 @@ class SCRFD(BaseModel):
 
     def __init__(
         self,
-        runtime_provider=None,
         nms_thresh: float = 0.4,
         det_thresh: float = 0.2,
         input_size: Tuple[int, int] = (640, 640),
-        provider_type: str = "onnx",
+        provider_type: str = None,
         model_file: str = None,
         server_url: str = None,
-        model_name: str = None,
+        model_name: str = "scrfd",
         **kwargs,
     ):
         """Initialize SCRFD model.
 
         Args:
-            runtime_provider: Runtime provider instance (ONNX, Triton, etc.) - optional
             nms_thresh: Non-maximum suppression threshold
             det_thresh: Detection confidence threshold
             input_size: Input image size (width, height)
@@ -52,7 +94,6 @@ class SCRFD(BaseModel):
             **kwargs: Additional provider-specific arguments
         """
         super().__init__(
-            runtime_provider=runtime_provider,
             provider_type=provider_type,
             model_file=model_file,
             server_url=server_url,
@@ -75,7 +116,7 @@ class SCRFD(BaseModel):
         self.input_shape = input_info["shape"]
 
         # Check if not input_shape = [1, 3, '?', '?']
-        if not isinstance(self.input_shape[2], str):
+        if not isinstance(self.input_shape[2], str) and not self.input_shape[2] < 0:
             # input_size = (W, H)
             self.input_size = tuple(self.input_shape[2:4][::-1])
 
@@ -110,6 +151,25 @@ class SCRFD(BaseModel):
         self._feat_stride_fpn = cfg["strides"]
         self._num_anchors = cfg["anchors"]
         self.use_kps = cfg["kps"]
+
+    def forward(self, input_data: np.ndarray) -> Dict[str, np.ndarray]:
+        """Run inference using the runtime provider.
+
+        For Triton providers, applies batch data extraction and sorting.
+        For other providers (like ONNX), returns raw output.
+
+        Args:
+            input_data: Preprocessed input tensor with shape (batch_size, channels, height, width)
+
+        Returns:
+            Dictionary mapping output names to numpy arrays
+        """
+        raw_output: Dict[str, np.ndarray] = self.runtime_provider.forward(input_data)
+
+        if isinstance(self.runtime_provider, TritonProvider):
+            return extract_and_sort_batch_data(raw_output)
+
+        return raw_output
 
     def _preprocess_single(self, img: np.ndarray) -> Tuple[np.ndarray, float]:
         """Preprocess input image for SCRFD model.

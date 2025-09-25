@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     # Model runtime configuration
     MODEL_RUNTIME_TYPE: str = "onnx"
-    TRITON_SERVER_URL: str = "http://triton:8000"
+    TRITON_SERVER_URL: str = "triton:8000"
 
     # Qdrant vector DB
     QDRANT_URL: str = "http://localhost:6333"

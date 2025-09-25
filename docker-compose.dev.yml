@@ -106,6 +106,8 @@ services:
     container_name: face_register_app_dev
     environment:
       DATABASE_URL: ${DATABASE_URL}_dev
+      MODEL_RUNTIME_TYPE: ${MODEL_RUNTIME_TYPE}
+      TRITON_SERVER_URL: ${TRITON_SERVER_URL}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT}
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}

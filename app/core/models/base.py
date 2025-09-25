@@ -3,7 +3,7 @@ from typing import Dict
 
 import numpy as np
 
-from app.core.runtime.base import RuntimeProvider
+from app.config.settings import settings
 
 
 class BaseModel(ABC):
@@ -11,36 +11,36 @@ class BaseModel(ABC):
 
     def __init__(
         self,
-        runtime_provider: RuntimeProvider = None,
-        provider_type: str = "onnx",
-        model_file: str = None,
-        server_url: str = None,
-        model_name: str = None,
+        provider_type: str | None = None,
+        model_file: str | None = None,
+        server_url: str | None = None,
+        model_name: str | None = None,
         **kwargs,
     ):
         """Initialize the base model.
 
         Args:
-            runtime_provider: Runtime provider instance (ONNX, Triton, etc.) - optional
             provider_type: Type of runtime provider ('onnx' or 'triton')
             model_file: Path to model file (for ONNX)
             server_url: Triton server URL (for Triton)
             model_name: Model name on Triton server (for Triton)
             **kwargs: Additional provider-specific arguments
         """
-        # Initialize runtime provider if not provided
-        if runtime_provider is None:
-            from app.core.runtime.factory import RuntimeProviderFactory
+        if provider_type is None:
+            provider_type = settings.MODEL_RUNTIME_TYPE
 
-            runtime_provider = RuntimeProviderFactory.create_provider(
-                provider_type=provider_type,
-                model_file=model_file,
-                server_url=server_url,
-                model_name=model_name,
-                **kwargs,
-            )
+        if server_url is None:
+            server_url = settings.TRITON_SERVER_URL
 
-        self.runtime_provider = runtime_provider
+        from app.core.runtime.factory import RuntimeProviderFactory
+
+        self.runtime_provider = RuntimeProviderFactory.create_provider(
+            provider_type=provider_type,
+            model_file=model_file,
+            server_url=server_url,
+            model_name=model_name,
+            **kwargs,
+        )
 
     @abstractmethod
     def preprocess(self, *args, **kwargs):

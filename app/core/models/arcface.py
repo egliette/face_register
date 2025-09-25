@@ -13,17 +13,15 @@ class ArcFace(BaseModel):
 
     def __init__(
         self,
-        runtime_provider=None,
-        provider_type: str = "onnx",
+        provider_type: str = None,
         model_file: str = None,
         server_url: str = None,
-        model_name: str = None,
+        model_name: str = "arcface",
         **kwargs,
     ):
         """Initialize ArcFace model.
 
         Args:
-            runtime_provider: Runtime provider instance (ONNX, Triton, etc.) - optional
             provider_type: Type of runtime provider ('onnx' or 'triton')
             model_file: Path to model file (for ONNX)
             server_url: Triton server URL (for Triton)
@@ -31,7 +29,6 @@ class ArcFace(BaseModel):
             **kwargs: Additional provider-specific arguments
         """
         super().__init__(
-            runtime_provider=runtime_provider,
             provider_type=provider_type,
             model_file=model_file,
             server_url=server_url,
