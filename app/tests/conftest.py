@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -11,7 +13,11 @@ from app.models.user import User
 
 @pytest.fixture(scope="session")
 def client() -> TestClient:
-    return TestClient(app)
+    token = os.getenv("API_TOKEN", "test-token")
+    app.dependency_overrides = {}
+    c = TestClient(app)
+    c.headers.update({"Authorization": f"Bearer {token}"})
+    return c
 
 
 @pytest.fixture(scope="function")
