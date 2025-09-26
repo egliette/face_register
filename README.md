@@ -13,7 +13,7 @@ A face registration system for capturing user metadata and storing it in the dat
 
 Face Register is a FastAPI-based application that provides:
 
-* **Face Detection & Recognition** with SCRFD + ArcFace (via ONNX Runtime)
+* **Face Detection & Recognition** with SCRFD + ArcFace (via ONNX Runtime or Triton Runtime)
 * **Face Comparison & Search** - Compare faces against database with similarity scoring
 * **User Management** with PostgreSQL + SQLAlchemy ORM
 * **Vector Search** using Qdrant
@@ -22,13 +22,14 @@ Face Register is a FastAPI-based application that provides:
 * **Testing** with Pytest
 * **Structured Logging** with custom logger
 * **Service Orchestration** using Docker & Docker Compose
+* **API Key Authentication** to secure access to the API
 
 ---
 
 ## ⚙️ Technology Stack
 
 * **FastAPI** – Web framework for APIs, request handling, and docs
-* **ONNX Runtime** – Runs SCRFD (face detection) and ArcFace (embedding) models
+* **ONNX Runtime** and **NVIDIA Triton** – Runtimes for SCRFD (face detection) and ArcFace (embedding) models
 * **PostgreSQL** – Stores user profiles and metadata
 * **SQLAlchemy** – ORM for database modeling and queries
 * **Alembic** – Handles schema migrations and versioning
@@ -36,7 +37,7 @@ Face Register is a FastAPI-based application that provides:
 * **MinIO** – Stores face images and model files (S3 compatible)
 * **Qdrant** – Vector database for face embedding similarity search
 * **Custom Logger** – Structured logs with performance metrics
-* **GitHub Actions** – Runs linting, tests, and builds on push/PR
+* **GitHub Actions** – Runs linting, tests, and builds on push/PR; automates tagging, publishing Docker images to GitHub Container Registry (GHCR), generating release notes, and version bumping
 * **Docker & Docker Compose** – Containerized setup for dev/test environments
 
 ---
@@ -63,8 +64,3 @@ Face Register is a FastAPI-based application that provides:
    * MinIO Console: [http://localhost:9001](http://localhost:9001)
 
 ---
-
-## ✅ TODO
-
-* [ ] Use models from another machine
-* [ ] Add auth for API
