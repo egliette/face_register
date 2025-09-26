@@ -12,7 +12,7 @@ services:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     ports:
-      - "5439:5432"
+      - "5432:5432"
     networks:
       - person_detection
     healthcheck:
@@ -30,8 +30,8 @@ services:
       TZ: ${TZ:-UTC}
     command: server /data --console-address ":9001"
     ports:
-      - "9009:9000"
-      - "9010:9001"
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_dev_data:/data
     networks:
@@ -132,7 +132,7 @@ services:
       LOG_MAX_DAYS: ${LOG_MAX_DAYS}
       TZ: ${TZ:-UTC}
     ports:
-      - "8009:8000"
+      - "8000:8000"
     volumes:
       - ./app:/app/app
       - ./assets:/app/assets
