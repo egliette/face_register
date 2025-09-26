@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.endpoints import router
+from app.api import router
 from app.config.settings import settings
+from app.utils.security import require_api_token
 
 app = FastAPI(
     title=settings.PROJECT_NAME, openapi_url=f"{settings.API_PREFIX}/openapi.json"
@@ -16,7 +17,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router, prefix=settings.API_PREFIX)
+app.include_router(
+    router, prefix=settings.API_PREFIX, dependencies=[Depends(require_api_token)]
+)
 
 
 @app.get("/")

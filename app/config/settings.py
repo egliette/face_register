@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_MAX_DAYS: int = 30
     SERVICE_NAME: str = "face_register"
+    API_TOKEN: str | None = None
 
     @property
     def BACKEND_CORS_ORIGINS(self) -> List[str]:
