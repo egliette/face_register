@@ -10,20 +10,17 @@ NETWORK_NAME="person_detection"
 
 REBUILD=false
 ATTACH_SHELL=false
-NO_COMMAND=false
 
 usage() {
-  echo "Usage: $(basename "$0") [--rebuild|-r] [--shell|-s] [--no-command|-n] [--help|-h]" >&2
+  echo "Usage: $(basename "$0") [--rebuild|-r] [--shell|-s] [--help|-h]" >&2
   echo "  --rebuild, -r     Rebuild app image before starting" >&2
   echo "  --shell, -s       Attach to app container shell instead of running the app" >&2
-  echo "  --no-command, -n  Don't execute the default command (useful with --shell)" >&2
   echo "  --help, -h        Show this help message" >&2
   echo "" >&2
   echo "Examples:" >&2
   echo "  $(basename "$0")                    # Start dev stack normally" >&2
   echo "  $(basename "$0") --shell            # Start stack and attach to app shell" >&2
   echo "  $(basename "$0") --rebuild --shell  # Rebuild app and attach to shell" >&2
-  echo "  $(basename "$0") --no-command       # Start stack without running app command" >&2
 }
 
 while [[ $# -gt 0 ]]; do
@@ -34,10 +31,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --shell|-s)
       ATTACH_SHELL=true
-      shift
-      ;;
-    --no-command|-n)
-      NO_COMMAND=true
       shift
       ;;
     --help|-h)
@@ -113,14 +106,8 @@ if [[ "$ATTACH_SHELL" == "true" ]]; then
   docker-compose -f "$COMPOSE_FILE" up -d app
   docker exec -it face_register_app_dev /bin/bash
 else
-  if [[ "$NO_COMMAND" == "true" ]]; then
-    echo "Starting app container without command..."
-    docker-compose -f "$COMPOSE_FILE" up -d app
-    echo "App container started. Use 'docker exec -it face_register_app_dev /bin/bash' to attach to shell"
-  else
-    echo "Starting dev stack with app..."
-    docker-compose -f "$COMPOSE_FILE" up app
-  fi
+  echo "Starting dev stack with app..."
+  docker-compose -f "$COMPOSE_FILE" up app
 fi
 
 echo "Done."
