@@ -1,9 +1,10 @@
-import os
+from typing import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.config.settings import settings
 from app.core.model_factory import get_arcface, get_scrfd
 from app.database.connection import SessionLocal
 from app.main import app
@@ -12,12 +13,12 @@ from app.models.user import User
 
 
 @pytest.fixture(scope="session")
-def client() -> TestClient:
-    token = os.getenv("API_TOKEN", "test-token")
+def client() -> Iterator[TestClient]:
+    token = settings.API_TOKEN
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
     app.dependency_overrides = {}
-    c = TestClient(app)
-    c.headers.update({"Authorization": f"Bearer {token}"})
-    return c
+    with TestClient(app, headers=headers) as c:
+        yield c
 
 
 @pytest.fixture(scope="function")

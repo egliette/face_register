@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     API_PREFIX: str = "/api"
     PROJECT_NAME: str = "Face Register API"
+    API_TOKEN: str | None = None
 
     FRONTEND_URL: str = "http://localhost:3000"
     ADMIN_PANEL_URL: str = "http://localhost:8080"
@@ -39,7 +40,6 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_MAX_DAYS: int = 30
     SERVICE_NAME: str = "face_register"
-    API_TOKEN: str | None = None
 
     @property
     def BACKEND_CORS_ORIGINS(self) -> List[str]:
