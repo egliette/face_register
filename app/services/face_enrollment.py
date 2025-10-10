@@ -48,7 +48,7 @@ class FaceEnrollmentService:
             return object_name
 
         except Exception as e:
-            log.error(f"Failed to upload image to MinIO for user {user_id}: {e}")
+            log.err(f"Failed to upload image to MinIO for user {user_id}: {e}")
             log.warn(
                 f"Face enrollment will continue without image storage for user {user_id}"
             )

@@ -31,7 +31,7 @@ class MinIOService:
             else:
                 log.bug(f"MinIO bucket already exists: {self.face_images_bucket}")
         except S3Error as e:
-            log.error(f"Failed to create MinIO bucket {self.face_images_bucket}: {e}")
+            log.err(f"Failed to create MinIO bucket {self.face_images_bucket}: {e}")
             raise
 
     def upload_face_image(
@@ -78,10 +78,10 @@ class MinIOService:
             return object_name
 
         except S3Error as e:
-            log.error(f"Failed to upload face image for user {user_id}: {e}")
+            log.err(f"Failed to upload face image for user {user_id}: {e}")
             raise
         except Exception as e:
-            log.error(f"Unexpected error uploading face image for user {user_id}: {e}")
+            log.err(f"Unexpected error uploading face image for user {user_id}: {e}")
             raise
 
     def get_face_image_url(self, object_name: str) -> str:
@@ -102,7 +102,7 @@ class MinIOService:
             )
             return url
         except S3Error as e:
-            log.error(f"Failed to generate presigned URL for {object_name}: {e}")
+            log.err(f"Failed to generate presigned URL for {object_name}: {e}")
             raise
 
     def delete_face_image(self, object_name: str) -> bool:
@@ -120,7 +120,7 @@ class MinIOService:
             log.info(f"Successfully deleted face image: {object_name}")
             return True
         except S3Error as e:
-            log.error(f"Failed to delete face image {object_name}: {e}")
+            log.err(f"Failed to delete face image {object_name}: {e}")
             return False
 
     def _get_extension_from_content_type(self, content_type: str) -> str:
