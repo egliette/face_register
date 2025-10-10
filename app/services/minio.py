@@ -1,6 +1,5 @@
 from datetime import timedelta
 from io import BytesIO
-from typing import Optional
 
 from minio import Minio
 from minio.error import S3Error
@@ -40,7 +39,6 @@ class MinIOService:
         face_embedding_id: int,
         image_data: bytes,
         content_type: str,
-        original_filename: Optional[str] = None,
     ) -> str:
         """
         Upload face image to MinIO and return the object name
@@ -50,7 +48,6 @@ class MinIOService:
             face_embedding_id: ID of the face embedding record
             image_data: Raw image data
             content_type: MIME type of the image
-            original_filename: Original filename (optional)
 
         Returns:
             str: Object name/path in MinIO

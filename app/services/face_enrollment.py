@@ -30,7 +30,6 @@ class FaceEnrollmentService:
         face_embedding_id: int,
         image_data: bytes,
         content_type: str,
-        original_filename: str,
     ) -> Optional[str]:
         """Upload image to MinIO and return the object path."""
         try:
@@ -39,7 +38,6 @@ class FaceEnrollmentService:
                 face_embedding_id=face_embedding_id,
                 image_data=image_data,
                 content_type=content_type,
-                original_filename=original_filename,
             )
 
             log.info(
@@ -102,7 +100,6 @@ class FaceEnrollmentService:
             face_embedding_id=record.id,
             image_data=image_data,
             content_type=image.content_type,
-            original_filename=image.filename,
         )
 
         if image_path:
